@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  passwordHash String?  @map("password_hash") @db.VarChar(255)
+  name         String   @db.VarChar(100)
+  avatarUrl    String?  @map("avatar_url") @db.VarChar(500)
+  isPro        Boolean  @default(false) @map("is_pro")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  transactions   Transaction[]
+  aiPendingItems AiPendingItem[]
+  preferences    UserPreference?
+  oauthAccounts  OauthAccount[]
+
+  @@map("users")
+}
+
+model OauthAccount {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  provider       String   @db.VarChar(50)
+  providerUserId String   @map("provider_user_id") @db.VarChar(255)
+  accessToken    String?  @map("access_token") @db.VarChar(500)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@map("oauth_accounts")
+}
+
+model VerificationCode {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @db.VarChar(255)
+  code      String   @db.VarChar(10)
+  purpose   String   @db.VarChar(20)
+  isUsed    Boolean  @default(false) @map("is_used")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email, purpose, isUsed])
+  @@map("verification_codes")
+}
+
+model UserPreference {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @unique @map("user_id") @db.Uuid
+  currency             String   @default("CNY") @db.VarChar(10)
+  language             String   @default("zh") @db.VarChar(5)
+  theme                String   @default("default") @db.VarChar(20)
+  notificationsEnabled Boolean  @default(true) @map("notifications_enabled")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model Category {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @db.VarChar(50)
+  icon       String   @db.VarChar(50)
+  colorClass String   @map("color_class") @db.VarChar(100)
+  type       String   @db.VarChar(20)
+  sortOrder  Int      @default(0) @map("sort_order")
+  isSystem   Boolean  @default(true) @map("is_system")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  transactions   Transaction[]
+  aiPendingItems AiPendingItem[]
+
+  @@unique([name, type])
+  @@map("categories")
+}
+
+model Transaction {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  categoryId      String   @map("category_id") @db.Uuid
+  type            String   @db.VarChar(20)
+  amount          Decimal  @db.Decimal(12, 2)
+  description     String   @db.VarChar(255)
+  subDescription  String?  @map("sub_description") @db.VarChar(255)
+  transactionDate DateTime @map("transaction_date") @db.Date
+  source          String   @db.VarChar(20)
+  aiItemId        String?  @map("ai_item_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId, transactionDate(sort: Desc)])
+  @@index([userId, type])
+  @@index([userId, categoryId])
+  @@index([userId, source])
+  @@map("transactions")
+}
+
+model AiPendingItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  categoryId  String?  @map("category_id") @db.Uuid
+  rawText     String   @map("raw_text")
+  type        String   @db.VarChar(20)
+  amount      Decimal  @db.Decimal(12, 2)
+  description String   @db.VarChar(255)
+  parsedDate  DateTime @map("parsed_date") @db.Date
+  confidence  String   @db.VarChar(10)
+  status      String   @default("PENDING") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("ai_pending_items")
+}
