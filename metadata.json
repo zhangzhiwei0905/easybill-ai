@@ -1,0 +1,5 @@
+{
+  "name": "EasyBill AI",
+  "description": "An AI-powered intelligent expense tracker and financial management dashboard featuring DeepSeek integration for smart transaction extraction and spending analysis.",
+  "requestFramePermissions": []
+}

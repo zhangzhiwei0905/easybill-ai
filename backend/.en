@@ -1,0 +1,40 @@
+# Database
+DATABASE_URL="postgresql://easybill:easybill123@localhost:5432/easybill_db?schema=public"
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
+JWT_REFRESH_EXPIRES_IN=30d
+
+# App
+PORT=3000
+NODE_ENV=development
+
+# Email (for verification codes)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+
+# AI API
+DEEPSEEK_API_KEY=your-deepseek-api-key
+DEEPSEEK_API_URL=https://api.deepseek.com/v1
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
+
+# WeChat OAuth (optional)
+WECHAT_APP_ID=your-wechat-app-id
+WECHAT_APP_SECRET=your-wechat-app-secret
+WECHAT_CALLBACK_URL=http://localhost:3000/api/auth/wechat/callback
+
+# File Upload
+MAX_FILE_SIZE=5242880
+UPLOAD_DIR=./uploads
