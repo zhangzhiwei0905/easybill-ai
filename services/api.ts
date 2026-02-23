@@ -1,5 +1,8 @@
-// API Service Layer — connects to backend at /api (proxied to localhost:3000)
-const BASE = '/api';
+// API Service Layer
+// Dev: /api (proxied by Vite to localhost:3000)
+// Production: VITE_API_URL (e.g. https://your-backend.railway.app/api)
+const BASE = (import.meta.env.VITE_API_URL ?? '') + '/api';
+
 
 async function request<T>(
     method: string,
