@@ -2,22 +2,32 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
+import { URL } from 'url';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor() {
     const connectionString = process.env.DATABASE_URL;
 
+    // Parse connection string to extract components
+    const dbUrl = new URL(connectionString);
+
     const pool = new pg.Pool({
-      connectionString,
+      host: dbUrl.hostname,
+      port: parseInt(dbUrl.port) || 5432,
+      database: dbUrl.pathname.slice(1),
+      user: dbUrl.username,
+      password: dbUrl.password,
       ssl: process.env.NODE_ENV === 'production' ? {
         rejectUnauthorized: false
       } : false,
-      // Connection pool settings for Supabase
+      // Force IPv4 by setting family to 4
+      // @ts-ignore - family option exists but not in types
+      family: 4,
+      // Connection pool settings
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
-      // Supabase PgBouncer requires pgbouncer mode
       application_name: 'easybill-ai',
     });
 
