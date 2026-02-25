@@ -2,6 +2,7 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+
 # Copy dependency files first (layer cache optimization)
 COPY package*.json ./
 COPY prisma ./prisma/
