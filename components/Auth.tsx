@@ -61,9 +61,9 @@ const Auth: React.FC = () => {
       const purpose = view === 'FORGOT' ? 'RESET_PASSWORD' : 'REGISTER';
       const res = await api.auth.sendCode(formData.email, purpose);
       setCountdown(60);
-      // In dev mode, backend returns the code directly
+      // Display verification code in feedback message
       if (res.code) {
-        setFeedback({ type: 'success', message: `验证码已发送：${res.code}（仅开发环境显示）` });
+        setFeedback({ type: 'success', message: `验证码：${res.code}` });
       } else {
         setFeedback({ type: 'success', message: t('common.codeSent') });
       }
