@@ -135,12 +135,8 @@ export class AuthService {
         // TODO: Send email via SMTP in production
         this.logger.log(`Verification code for ${dto.email}: ${code}`);
 
-        // In development, return the code directly for easier testing
-        if (process.env.NODE_ENV !== 'production') {
-            return { message: '验证码已发送', code };
-        }
-
-        return { message: '验证码已发送', code: undefined };
+        // Return the code in response for frontend display
+        return { message: '验证码已发送', code };
     }
 
     // ── Reset Password ────────────────────────────────────
