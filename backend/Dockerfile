@@ -1,39 +1,22 @@
-FROM node:22-alpine AS builder
-
-WORKDIR /app
-
-# Copy dependency files
-COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install ALL deps (including devDependencies needed for nest build)
-RUN npm ci --ignore-scripts
-
-# Generate Prisma client
-RUN npx prisma generate
-
-# Copy source code
-COPY . .
-
-# Build the NestJS application
-RUN npx nest build
-
-# ── Production image ──────────────────────────────────────
 FROM node:22-alpine
 
 WORKDIR /app
 
+# Copy dependency files first (layer cache optimization)
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install production deps only
-RUN npm ci --ignore-scripts --omit=dev
+# Install ALL dependencies (devDeps needed for nest build)
+RUN npm install
 
-# Generate Prisma client in prod image
+# Generate Prisma client
 RUN npx prisma generate
 
-# Copy compiled output from builder
-COPY --from=builder /app/dist ./dist
+# Copy source (node_modules excluded via .dockerignore)
+COPY . .
+
+# Build TypeScript → dist/
+RUN npm run build
 
 EXPOSE 3000
 
