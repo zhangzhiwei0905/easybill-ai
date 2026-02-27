@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useLanguage } from '../LanguageContext';
 import { AiPendingItem, GlobalOutletContextType } from '../types';
+import { api, DashboardSummary } from '../services/api';
 import EditAuditModal from './EditAuditModal';
 import ConfirmRecordModal from './ConfirmRecordModal';
 
@@ -13,27 +14,90 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { t } = useLanguage();
-  const { aiItems, setAiItems } = useOutletContext<GlobalOutletContextType>();
+  const { aiItems, setAiItems, refreshAiItems } = useOutletContext<GlobalOutletContextType>();
   const [editingAiItem, setEditingAiItem] = useState<AiPendingItem | null>(null);
   const [confirmingAiItem, setConfirmingAiItem] = useState<AiPendingItem | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('已成功记入账本');
+  const [confirming, setConfirming] = useState(false);
 
-  // Mock Data for Charts
-  const trendData = [
-    { day: '1', amount: 1200 }, { day: '5', amount: 3400 },
-    { day: '10', amount: 2800 }, { day: '15', amount: 1500 },
-    { day: '20', amount: 5600 }, { day: '25', amount: 2300 },
-    { day: '30', amount: 4100 },
-  ];
+  // Real data states
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
+  const [trendData, setTrendData] = useState<Array<{ day: string; amount: number }>>([]);
+  const [categoryData, setCategoryData] = useState<Array<{ name: string; value: number; color: string }>>([]);
 
-  const categoryData = [
-    { name: '餐饮美食', value: 35, color: '#137fec' },
-    { name: '交通出行', value: 25, color: '#3b82f6' },
-    { name: '网购日常', value: 20, color: '#60a5fa' },
-    { name: '其他支出', value: 20, color: '#93c5fd' },
-  ];
+  // Load dashboard data
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      if (!token) return;
+
+      setLoading(true);
+      try {
+        // Get current month date range
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        const monthEnd = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+
+        // Fetch dashboard summary (all-time + current month in one call)
+        const data = await api.transactions.dashboardSummary(token, monthStart, monthEnd);
+
+        setDashboardData(data);
+
+        // Process category data for pie chart
+        if (data.currentMonth.categoryStats) {
+          const colors = ['#137fec', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
+          const total = Object.values(data.currentMonth.categoryStats).reduce(
+            (sum, stat) => sum + stat.amount,
+            0
+          );
+
+          const categories = Object.entries(data.currentMonth.categoryStats)
+            .map(([name, stat], idx) => ({
+              name,
+              value: total > 0 ? Math.round((stat.amount / total) * 100) : 0,
+              color: colors[idx % colors.length],
+            }))
+            .filter(cat => cat.value > 0)
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5); // Top 5 categories
+
+          setCategoryData(categories);
+        }
+
+        // Generate trend data (simplified - showing last 7 days)
+        const trendDays = [];
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          trendDays.push({
+            day: String(date.getDate()),
+            amount: 0, // Will be populated with real data if available
+          });
+        }
+        setTrendData(trendDays);
+
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboardData();
+
+    // Register global refresh function for ManualEntryModal
+    (window as any).__refreshDashboard = loadDashboardData;
+
+    return () => {
+      delete (window as any).__refreshDashboard;
+    };
+  }, [token]);
 
   const handleConfirmAiItem = (id: string) => {
     const item = aiItems.find(i => i.id === id);
@@ -42,12 +106,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
     }
   };
 
-  const handleRealConfirm = () => {
-    if (confirmingAiItem) {
+  const handleRealConfirm = async () => {
+    if (!confirmingAiItem || !token || !confirmingAiItem.categoryId) {
+      setToastMessage('请先选择分类');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
+    setConfirming(true);
+    try {
+      await api.aiItems.confirm(
+        confirmingAiItem.id,
+        {
+          type: confirmingAiItem.type,
+          amount: confirmingAiItem.amount,
+          description: confirmingAiItem.description,
+          date: new Date(confirmingAiItem.date).toISOString().split('T')[0],
+          categoryId: confirmingAiItem.categoryId,
+        },
+        token
+      );
+
+      // 从列表中移除已确认的项
       setAiItems(prev => prev.filter(item => item.id !== confirmingAiItem.id));
       setConfirmingAiItem(null);
-      
-      // Show Success Toast
+      setToastMessage('已成功记入账本');
+
+      // 刷新 Dashboard 数据
+      if ((window as any).__refreshDashboard) {
+        (window as any).__refreshDashboard();
+      }
+    } catch (error) {
+      console.error('Failed to confirm AI item:', error);
+      setToastMessage('确认失败，请重试');
+    } finally {
+      setConfirming(false);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     }
@@ -87,10 +181,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
 
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <SummaryCard title={t('common.totalExpense')} amount="¥482,930" icon="outbox" color="text-danger" bg="bg-red-50" />
-            <SummaryCard title={t('common.totalIncome')} amount="¥607,430" icon="inbox" color="text-success" bg="bg-emerald-50" />
-            <SummaryCard title={t('common.monthExpense')} amount="¥8,340" icon="calendar_month" color="text-orange-500" bg="bg-orange-50" />
-            <SummaryCard title={t('common.monthIncome')} amount="¥15,200" icon="payments" color="text-primary" bg="bg-blue-50" />
+            <SummaryCard title={t('common.totalExpense')} amount={loading ? '...' : `¥${(dashboardData?.allTime.totalExpense ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon="outbox" color="text-danger" bg="bg-red-50" />
+            <SummaryCard title={t('common.totalIncome')} amount={loading ? '...' : `¥${(dashboardData?.allTime.totalIncome ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon="inbox" color="text-success" bg="bg-emerald-50" />
+            <SummaryCard title={t('common.monthExpense')} amount={loading ? '...' : `¥${(dashboardData?.currentMonth.totalExpense ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon="calendar_month" color="text-orange-500" bg="bg-orange-50" />
+            <SummaryCard title={t('common.monthIncome')} amount={loading ? '...' : `¥${(dashboardData?.currentMonth.totalIncome ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon="payments" color="text-primary" bg="bg-blue-50" />
           </div>
 
           {/* Trend Chart */}
@@ -104,6 +198,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
               </select>
             </div>
             <div className="h-56 md:h-64 w-full">
+              {!loading && (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData}>
                   <defs>
@@ -134,55 +229,68 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
                   />
                 </AreaChart>
               </ResponsiveContainer>
+              )}
             </div>
           </div>
 
           {/* Category Chart */}
           <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
             <h3 className="font-bold text-lg text-text-main mb-6">{t('common.categoryDist')}</h3>
-            <div className="flex flex-col md:flex-row items-center justify-around gap-8">
-              <div className="w-48 h-48 relative shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xs text-text-sub uppercase tracking-wider font-medium">{t('common.totalExpense')}</span>
-                  <span className="text-xl font-bold text-text-main">¥8.3k</span>
+            {loading ? (
+              <div className="flex items-center justify-center h-64 text-slate-400">
+                <span>加载中...</span>
+              </div>
+            ) : categoryData.length === 0 ? (
+              <div className="flex items-center justify-center h-64 text-slate-400">
+                <span>暂无分类数据</span>
+              </div>
+            ) : (
+              <div className="flex flex-col md:flex-row items-center justify-around gap-8">
+                <div className="w-48 h-48 relative shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        startAngle={90}
+                        endAngle={-270}
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-xs text-text-sub uppercase tracking-wider font-medium">{t('common.totalExpense')}</span>
+                    <span className="text-xl font-bold text-text-main">
+                      ¥{dashboardData?.currentMonth.totalExpense ? (dashboardData.currentMonth.totalExpense / 1000).toFixed(1) + 'k' : '0'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 w-full max-w-sm">
+                  {categoryData.map((cat, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }}></div>
+                      <span className="text-sm text-text-sub">{cat.name}</span>
+                      <span className="text-sm font-bold ml-auto">{cat.value}%</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              
-              <div className="grid grid-cols-2 gap-x-8 gap-y-4 w-full max-w-sm">
-                {categoryData.map((cat, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }}></div>
-                    <span className="text-sm text-text-sub">{cat.name}</span>
-                    <span className="text-sm font-bold ml-auto">{cat.value}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
         </div>
 
         {/* Right Sidebar - AI Insights */}
-        <aside className="w-full lg:w-96 flex flex-col gap-6 shrink-0">
-          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
-            <div className="flex items-center justify-between mb-6">
+        <aside className="w-full lg:w-96 shrink-0">
+          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">auto_awesome</span>
                 <h3 className="font-bold text-lg text-text-main">{t('common.aiInsight')}</h3>
@@ -190,31 +298,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
               <span className="bg-primary/10 text-primary text-[11px] px-2 py-1 rounded font-bold">{aiItems.length} {t('common.pendingConfirm')}</span>
             </div>
 
-            <div className="flex flex-col gap-4 flex-1">
+            {/* AI Items List - 默认只显示3条 */}
+            <div className="flex flex-col gap-3">
               {aiItems.length > 0 ? (
-                aiItems.map(item => (
-                  <AiPendingCard 
-                    key={item.id}
-                    item={item}
-                    onConfirm={() => handleConfirmAiItem(item.id)}
-                    onEdit={() => handleEditAiItem(item)}
-                    t={t}
-                  />
-                ))
+                <>
+                  {aiItems.slice(0, 3).map(item => (
+                    <AiPendingCard
+                      key={item.id}
+                      item={item}
+                      onConfirm={() => handleConfirmAiItem(item.id)}
+                      onEdit={() => handleEditAiItem(item)}
+                      t={t}
+                    />
+                  ))}
+                </>
               ) : (
-                <div className="flex flex-col items-center justify-center h-40 text-text-sub opacity-50">
+                <div className="flex flex-col items-center justify-center h-32 text-text-sub opacity-50">
                   <span className="material-symbols-outlined text-4xl mb-2">check_circle</span>
                   <p className="text-sm">All Confirmed</p>
                 </div>
               )}
             </div>
-            
-            <div className="mt-4 pt-4 border-t border-slate-100 text-center">
-              <button 
+
+            {/* 查看全部按钮 */}
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <button
                 onClick={() => navigate('/ai-audit')}
-                className="text-xs text-text-sub hover:text-primary font-medium flex items-center justify-center gap-1 w-full transition-colors p-2"
+                className="text-xs text-text-sub hover:text-primary font-medium flex items-center justify-center gap-1 w-full transition-colors py-2 hover:bg-slate-50 rounded-lg"
               >
-                {t('common.checkAll')}
+                <span>{t('common.checkAll')}</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
             </div>
@@ -245,7 +357,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
       {showToast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] bg-[#111418] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 fade-in duration-300">
           <span className="material-symbols-outlined text-success">check_circle</span>
-          <span className="font-bold text-sm">已成功记入账本</span>
+          <span className="font-bold text-sm">{toastMessage}</span>
         </div>
       )}
     </div>

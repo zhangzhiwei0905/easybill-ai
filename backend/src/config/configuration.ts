@@ -21,7 +21,8 @@ export default () => ({
   },
   ai: {
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
-    deepseekApiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1',
+    deepseekApiUrl:
+      process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1',
   },
   oauth: {
     google: {

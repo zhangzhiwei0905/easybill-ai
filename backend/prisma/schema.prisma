@@ -12,6 +12,7 @@ model User {
   passwordHash String?  @map("password_hash") @db.VarChar(255)
   name         String   @db.VarChar(100)
   avatarUrl    String?  @map("avatar_url") @db.VarChar(500)
+  webhookKey   String?  @map("webhook_key") @db.VarChar(64)
   isPro        Boolean  @default(false) @map("is_pro")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")

@@ -180,7 +180,7 @@ export const translations = {
       pendingConfirm: 'Pending',
       confirmAll: 'Confirm All',
       checkAll: 'View All Records',
-      aiParsing: 'AI Parse',
+      aiParsing: 'Raw Message',
       confirmRecord: 'Confirm',
       noMatch: 'No matching records found',
       clearFilter: 'Clear Filters',
