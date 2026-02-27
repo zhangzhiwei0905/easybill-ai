@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, NavLink, useLocation, Outlet, useOutletContext } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { LanguageProvider, useLanguage } from './LanguageContext';
@@ -10,35 +10,45 @@ import AiAnalysis from './components/AiAnalysis';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
 import ManualEntryModal from './components/ManualEntryModal';
-import { AiPendingItem, GlobalOutletContextType } from './types';
+import { AiPendingItem, GlobalOutletContextType, AiPendingItemApiResponse } from './types';
+import { api } from './services/api';
 
-// Initial Data Set for AI Audit (Updated to match screenshot)
-const INITIAL_AI_ITEMS: AiPendingItem[] = [
-  {
-    id: '2',
-    rawText: '滴滴出行自动扣款成功，金额28.00元，订单号...',
-    date: '2023年10月24日',
-    category: "交通出行",
-    categoryIcon: "directions_car",
-    categoryColor: "bg-blue-100 text-blue-600",
-    description: "滴滴出行",
-    amount: 28.00,
-    confidence: 'HIGH',
-    type: 'EXPENSE'
-  },
-  {
-    id: '3',
-    rawText: '京东商城消费128.00元，商品：洁柔抽纸...',
-    date: '2023年10月24日',
-    category: "网购日常",
-    categoryIcon: "shopping_bag",
-    categoryColor: "bg-pink-100 text-pink-600",
-    description: "京东商城",
-    amount: 128.00,
-    confidence: 'HIGH',
-    type: 'EXPENSE'
-  }
-];
+// 分类图标和颜色映射
+const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
+  '餐饮美食': { icon: 'restaurant', color: 'bg-orange-100 text-orange-600' },
+  '购物消费': { icon: 'shopping_bag', color: 'bg-pink-100 text-pink-600' },
+  '交通出行': { icon: 'directions_car', color: 'bg-blue-100 text-blue-600' },
+  '生活缴费': { icon: 'receipt_long', color: 'bg-green-100 text-green-600' },
+  '医疗健康': { icon: 'medical_services', color: 'bg-red-100 text-red-600' },
+  '娱乐休闲': { icon: 'sports_esports', color: 'bg-purple-100 text-purple-600' },
+  '学习教育': { icon: 'school', color: 'bg-indigo-100 text-indigo-600' },
+  '人情往来': { icon: 'card_giftcard', color: 'bg-rose-100 text-rose-600' },
+  '工资收入': { icon: 'account_balance_wallet', color: 'bg-emerald-100 text-emerald-600' },
+  '投资收益': { icon: 'trending_up', color: 'bg-teal-100 text-teal-600' },
+  '奖金收入': { icon: 'emoji_events', color: 'bg-amber-100 text-amber-600' },
+  '兼职收入': { icon: 'work', color: 'bg-cyan-100 text-cyan-600' },
+  '转账': { icon: 'swap_horiz', color: 'bg-slate-100 text-slate-600' },
+};
+
+// 将 API 响应转换为前端显示格式
+function transformAiItem(item: AiPendingItemApiResponse): AiPendingItem {
+  const categoryConfig = item.category ? CATEGORY_CONFIG[item.category.name] : { icon: 'help', color: 'bg-gray-100 text-gray-600' };
+
+  return {
+    id: item.id,
+    rawText: item.rawText,
+    date: new Date(item.parsedDate).toLocaleDateString('zh-CN'),
+    category: item.category?.name || '未分类',
+    categoryIcon: categoryConfig.icon,
+    categoryColor: categoryConfig.color,
+    description: item.description,
+    amount: Number(item.amount),
+    confidence: item.confidence,
+    type: item.type,
+    status: item.status,
+    categoryId: item.categoryId || undefined,
+  };
+}
 
 // Component to protect routes that require authentication
 const ProtectedRoute: React.FC = () => {
@@ -58,25 +68,58 @@ const ProtectedRoute: React.FC = () => {
 
 // Layout component for authenticated pages
 const AppLayout: React.FC = () => {
+  const { token } = useAuth();
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
-  const [aiItems, setAiItems] = useState<AiPendingItem[]>(INITIAL_AI_ITEMS);
+  const [aiItems, setAiItems] = useState<AiPendingItem[]>([]);
+  const [aiItemsLoading, setAiItemsLoading] = useState(true);
+  const [transactionRefreshKey, setTransactionRefreshKey] = useState(0);
+
+  // 从后端获取 AI 待审核项
+  const fetchAiItems = async () => {
+    if (!token) return;
+
+    setAiItemsLoading(true);
+    try {
+      const response = await api.aiItems.findAll(token, 'PENDING');
+      const transformedItems = response.items
+        .filter((item: AiPendingItemApiResponse) => item.status === 'PENDING' || item.status === 'NEEDS_MANUAL')
+        .map(transformAiItem);
+      setAiItems(transformedItems);
+    } catch (error) {
+      console.error('Failed to fetch AI items:', error);
+    } finally {
+      setAiItemsLoading(false);
+    }
+  };
+
+  // 初始化和 token 变化时获取数据
+  useEffect(() => {
+    if (token) {
+      fetchAiItems();
+    }
+  }, [token]);
 
   const refreshAiItems = () => {
-    setAiItems(INITIAL_AI_ITEMS);
+    fetchAiItems();
+  };
+
+  const handleTransactionSuccess = () => {
+    setTransactionRefreshKey(prev => prev + 1); // Trigger refresh in Transactions component
   };
 
   const contextValue: GlobalOutletContextType = {
     onOpenEntryModal: () => setIsEntryModalOpen(true),
     aiItems,
     setAiItems,
-    refreshAiItems
+    refreshAiItems,
+    onTransactionSuccess: handleTransactionSuccess
   };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background-light flex-col md:flex-row">
       {/* Sidebar - Hidden on Mobile */}
-      <Sidebar 
-        onOpenEntryModal={() => setIsEntryModalOpen(true)} 
+      <Sidebar
+        onOpenEntryModal={() => setIsEntryModalOpen(true)}
         aiPendingCount={aiItems.length}
       />
 
@@ -90,7 +133,10 @@ const AppLayout: React.FC = () => {
 
       {/* Global Modal */}
       {isEntryModalOpen && (
-        <ManualEntryModal onClose={() => setIsEntryModalOpen(false)} />
+        <ManualEntryModal
+          onClose={() => setIsEntryModalOpen(false)}
+          onSuccess={handleTransactionSuccess}
+        />
       )}
     </div>
   );

@@ -12,6 +12,7 @@ dist
 plans
 dist-ssr
 *.local
+problem/
 
 # Editor directories and files
 .vscode/*
@@ -23,6 +24,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Deployment problem records (local only)
-problem/
+tmp
+data
+.env.production

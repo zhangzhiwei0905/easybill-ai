@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, User } from '../AuthContext';
 import { useLanguage } from '../LanguageContext';
+import { api } from '../services/api';
 import ConfirmActionModal from './ConfirmActionModal';
 import EditProfileModal from './EditProfileModal';
 
@@ -11,6 +12,58 @@ const Settings: React.FC = () => {
   const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+  const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
+  const [webhookKey, setWebhookKey] = useState<string | null>(null);
+  const [showWebhookKey, setShowWebhookKey] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load webhook key
+  useEffect(() => {
+    if (token && user) {
+      loadWebhookKey();
+    }
+  }, [token, user]);
+
+  const loadWebhookKey = async () => {
+    try {
+      const result = await api.auth.getWebhookKey(token!);
+      setWebhookKey(result.webhookKey);
+    } catch (error) {
+      console.error('Failed to load webhook key:', error);
+    }
+  };
+
+  const handleCopyWebhookKey = async () => {
+    if (webhookKey) {
+      await navigator.clipboard.writeText(webhookKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyUserId = async () => {
+    if (user?.id) {
+      await navigator.clipboard.writeText(user.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleRegenerateWebhookKey = async () => {
+    if (!token) return;
+    setIsLoading(true);
+    try {
+      const result = await api.auth.regenerateWebhookKey(token);
+      setWebhookKey(result.webhookKey);
+      setIsRegenerateModalOpen(false);
+    } catch (error) {
+      console.error('Failed to regenerate webhook key:', error);
+      alert('重新生成失败，请稍后重试');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Settings State
   const [currency, setCurrency] = useState('CNY');
@@ -51,6 +104,15 @@ const Settings: React.FC = () => {
       ]
     }
   ];
+
+  // Webhook 配置示例
+  const webhookExample = `curl -X POST https://your-api.com/api/ai-items/webhook \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "rawText": "【银行】支出100元",
+    "userId": "${user?.id}",
+    "webhookKey": "${webhookKey || 'your-webhook-key'}"
+  }'`;
 
   const handleLogoutClick = () => {
     setIsLogoutModalOpen(true);
@@ -100,6 +162,86 @@ const Settings: React.FC = () => {
           >
             {t('settings.editProfileTitle')}
           </button>
+        </div>
+
+        {/* Webhook Configuration Card */}
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="size-10 rounded-full bg-purple-50 flex items-center justify-center">
+              <span className="material-symbols-outlined text-purple-500">webhook</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-text-main">Webhook 配置</h3>
+              <p className="text-xs text-text-sub">用于短信自动记账的 API 密钥</p>
+            </div>
+          </div>
+
+          {/* User ID */}
+          <div className="mb-4">
+            <label className="text-xs font-medium text-text-sub mb-1 block">用户 ID</label>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-slate-50 px-3 py-2 rounded-lg text-xs font-mono text-slate-600 break-all">
+                {user?.id}
+              </code>
+              <button
+                onClick={handleCopyUserId}
+                className="shrink-0 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+                title="复制用户ID"
+              >
+                <span className="material-symbols-outlined text-slate-500 text-[18px]">content_copy</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Webhook Key */}
+          <div className="mb-4">
+            <label className="text-xs font-medium text-text-sub mb-1 block">Webhook Key</label>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-slate-50 px-3 py-2 rounded-lg text-xs font-mono text-slate-600 break-all">
+                {showWebhookKey ? (webhookKey || '未设置') : '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••'}
+              </code>
+              <button
+                onClick={() => setShowWebhookKey(!showWebhookKey)}
+                className="shrink-0 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+                title={showWebhookKey ? '隐藏' : '显示'}
+              >
+                <span className="material-symbols-outlined text-slate-500 text-[18px]">
+                  {showWebhookKey ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+              <button
+                onClick={handleCopyWebhookKey}
+                className="shrink-0 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+                title="复制 Webhook Key"
+              >
+                <span className="material-symbols-outlined text-slate-500 text-[18px]">
+                  {copied ? 'check' : 'content_copy'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Usage Example */}
+          <div className="mb-4">
+            <label className="text-xs font-medium text-text-sub mb-1 block">调用示例</label>
+            <pre className="bg-slate-900 text-green-400 p-3 rounded-lg text-[10px] md:text-xs overflow-x-auto whitespace-pre-wrap break-all font-mono">
+              {webhookExample}
+            </pre>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsRegenerateModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-50 text-amber-600 text-xs font-medium hover:bg-amber-100 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              重新生成
+            </button>
+            <span className="text-xs text-text-sub">
+              重新生成后，旧的 Key 将立即失效
+            </span>
+          </div>
         </div>
 
         {/* Settings Groups */}
@@ -190,6 +332,20 @@ const Settings: React.FC = () => {
           onClose={() => setActiveSheet(null)}
         />
       )}
+
+      {/* Regenerate Webhook Key Modal */}
+      <ConfirmActionModal
+        isOpen={isRegenerateModalOpen}
+        onClose={() => setIsRegenerateModalOpen(false)}
+        onConfirm={handleRegenerateWebhookKey}
+        title="重新生成 Webhook Key"
+        message="确定要重新生成 Webhook Key 吗？生成后，旧的 Key 将立即失效，您需要更新所有使用该 Key 的配置。"
+        confirmText={isLoading ? '生成中...' : '确认生成'}
+        confirmButtonClass="bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200"
+        icon="refresh"
+        iconColorClass="text-amber-500"
+        iconBgClass="bg-amber-50"
+      />
     </div>
   );
 };

@@ -7,6 +7,7 @@ export interface User {
   email: string;
   avatar?: string | null;
   isPro?: boolean;
+  webhookKey?: string | null;
 }
 
 interface AuthContextType {
