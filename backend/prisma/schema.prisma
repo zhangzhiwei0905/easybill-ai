@@ -90,7 +90,6 @@ model Transaction {
   type            String   @db.VarChar(20)
   amount          Decimal  @db.Decimal(12, 2)
   description     String   @db.VarChar(255)
-  subDescription  String?  @map("sub_description") @db.VarChar(255)
   transactionDate DateTime @map("transaction_date") @db.Date
   source          String   @db.VarChar(20)
   aiItemId        String?  @map("ai_item_id") @db.Uuid

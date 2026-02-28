@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
@@ -7,6 +7,8 @@ import { AiPendingItem, GlobalOutletContextType } from '../types';
 import { api, DashboardSummary } from '../services/api';
 import EditAuditModal from './EditAuditModal';
 import ConfirmRecordModal from './ConfirmRecordModal';
+
+type TrendPeriod = 'this_month' | 'last_month' | '3_months';
 
 interface DashboardProps {
   onOpenEntryModal: () => void;
@@ -26,23 +28,58 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
   // Real data states
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
-  const [trendData, setTrendData] = useState<Array<{ day: string; amount: number }>>([]);
+  const [trendData, setTrendData] = useState<Array<{ date: string; day: string; amount: number }>>([]);
   const [categoryData, setCategoryData] = useState<Array<{ name: string; value: number; color: string }>>([]);
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('this_month');
+
+  // Prevent duplicate requests in StrictMode
+  const isLoadingRef = useRef(false);
+  const lastTrendPeriodRef = useRef<TrendPeriod | null>(null);
+
+  // Calculate date range based on trend period
+  const getDateRange = useCallback((period: TrendPeriod): { monthStart: string; monthEnd: string } => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+
+    if (period === 'this_month') {
+      const start = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const end = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+      return { monthStart: start, monthEnd: end };
+    } else if (period === 'last_month') {
+      const lastMonthYear = month === 1 ? year - 1 : year;
+      const lastMonth = month === 1 ? 12 : month - 1;
+      const start = `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`;
+      const lastDay = new Date(lastMonthYear, lastMonth, 0).getDate();
+      const end = `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-${lastDay}`;
+      return { monthStart: start, monthEnd: end };
+    } else {
+      // 3 months
+      const startMonth = month - 2;
+      const startYear = startMonth <= 0 ? year - 1 : year;
+      const actualStartMonth = startMonth <= 0 ? startMonth + 12 : startMonth;
+      const start = `${startYear}-${String(actualStartMonth).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const end = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+      return { monthStart: start, monthEnd: end };
+    }
+  }, []);
 
   // Load dashboard data
   useEffect(() => {
     const loadDashboardData = async () => {
       if (!token) return;
 
+      // Prevent duplicate requests in StrictMode (only for same period)
+      const periodChanged = lastTrendPeriodRef.current !== trendPeriod;
+      if (isLoadingRef.current && !periodChanged) return;
+      isLoadingRef.current = true;
+      lastTrendPeriodRef.current = trendPeriod;
+
       setLoading(true);
       try {
-        // Get current month date range
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
-        const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
-        const lastDay = new Date(year, month, 0).getDate();
-        const monthEnd = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+        const { monthStart, monthEnd } = getDateRange(trendPeriod);
 
         // Fetch dashboard summary (all-time + current month in one call)
         const data = await api.transactions.dashboardSummary(token, monthStart, monthEnd);
@@ -70,34 +107,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
           setCategoryData(categories);
         }
 
-        // Generate trend data (simplified - showing last 7 days)
-        const trendDays = [];
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          trendDays.push({
-            day: String(date.getDate()),
-            amount: 0, // Will be populated with real data if available
-          });
+        // Use trend data from backend
+        if (data.currentMonth.trendData) {
+          setTrendData(
+            data.currentMonth.trendData.map((item) => ({
+              date: item.date, // Keep full date for tooltip
+              day: new Date(item.date).getDate().toString(),
+              amount: item.amount,
+            }))
+          );
         }
-        setTrendData(trendDays);
 
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
       } finally {
         setLoading(false);
+        isLoadingRef.current = false;
       }
     };
 
     loadDashboardData();
 
     // Register global refresh function for ManualEntryModal
-    (window as any).__refreshDashboard = loadDashboardData;
+    (window as any).__refreshDashboard = () => {
+      isLoadingRef.current = false; // Reset ref to allow refresh
+      loadDashboardData();
+    };
 
     return () => {
       delete (window as any).__refreshDashboard;
     };
-  }, [token]);
+  }, [token, trendPeriod, getDateRange]);
 
   const handleConfirmAiItem = (id: string) => {
     const item = aiItems.find(i => i.id === id);
@@ -191,10 +231,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
           <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg text-text-main">{t('common.trend')}</h3>
-              <select className="bg-transparent text-sm font-medium text-text-sub border-none focus:ring-0 cursor-pointer hover:text-primary outline-none">
-                <option>This Month</option>
-                <option>Last Month</option>
-                <option>3 Months</option>
+              <select
+                value={trendPeriod}
+                onChange={(e) => setTrendPeriod(e.target.value as TrendPeriod)}
+                className="bg-transparent text-sm font-medium text-text-sub border-none focus:ring-0 cursor-pointer hover:text-primary outline-none"
+              >
+                <option value="this_month">This Month</option>
+                <option value="last_month">Last Month</option>
+                <option value="3_months">3 Months</option>
               </select>
             </div>
             <div className="h-56 md:h-64 w-full">
@@ -207,10 +251,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
                       <stop offset="95%" stopColor="#137fec" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                     itemStyle={{ color: '#137fec', fontWeight: 'bold' }}
                     formatter={(value: number) => [`¥${value}`, t('common.expense')]}
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload[0] && payload[0].payload?.date) {
+                        return payload[0].payload.date;
+                      }
+                      return label;
+                    }}
                   />
                   <Area 
                     type="monotone" 

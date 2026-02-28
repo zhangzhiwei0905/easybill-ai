@@ -34,9 +34,4 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsString()
   description?: string;
-
-  @ApiProperty({ description: '账户ID', required: false })
-  @IsOptional()
-  @IsUUID()
-  accountId?: string;
 }

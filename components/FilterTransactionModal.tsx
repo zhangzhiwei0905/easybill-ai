@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 export interface FilterCriteria {
-  type: 'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
+  type: 'ALL' | 'EXPENSE' | 'INCOME';
   source: 'ALL' | 'AI_EXTRACTED' | 'MANUAL';
   minAmount: string;
   maxAmount: string;
@@ -57,17 +57,17 @@ const FilterTransactionModal: React.FC<FilterTransactionModalProps> = ({
           <div className="flex flex-col gap-3">
             <label className="text-sm font-bold text-text-main">交易类型</label>
             <div className="flex bg-background-light p-1 rounded-lg">
-              {(['ALL', 'EXPENSE', 'INCOME', 'TRANSFER'] as const).map((type) => (
+              {(['ALL', 'EXPENSE', 'INCOME'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => setFilters({ ...filters, type })}
                   className={`flex-1 py-2 text-xs md:text-sm font-bold rounded-md transition-all ${
-                    filters.type === type 
-                      ? 'bg-white text-primary shadow-sm' 
+                    filters.type === type
+                      ? 'bg-white text-primary shadow-sm'
                       : 'text-text-sub hover:text-text-main'
                   }`}
                 >
-                  {type === 'ALL' ? '全部' : type === 'EXPENSE' ? '支出' : type === 'INCOME' ? '收入' : '转账'}
+                  {type === 'ALL' ? '全部' : type === 'EXPENSE' ? '支出' : '收入'}
                 </button>
               ))}
             </div>

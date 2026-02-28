@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '../AuthContext';
+import { api } from '../services/api';
 import { AiPendingItem, GlobalOutletContextType } from '../types';
 import EditAuditModal from './EditAuditModal';
 import ConfirmActionModal from './ConfirmActionModal';
@@ -9,22 +11,29 @@ import ConfirmRecordModal from './ConfirmRecordModal';
 const AiAudit: React.FC = () => {
   const { aiItems, setAiItems, refreshAiItems } = useOutletContext<GlobalOutletContextType>();
   const { t } = useLanguage();
+  const { token } = useAuth();
   const [editingItem, setEditingItem] = useState<AiPendingItem | null>(null);
   const [confirmingItem, setConfirmingItem] = useState<AiPendingItem | null>(null);
   const [isConfirmAllModalOpen, setIsConfirmAllModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('已成功记入账本');
+  const [isConfirming, setIsConfirming] = useState(false);
 
-  const handleRefresh = () => {
+  // 页面进入时获取最新数据
+  useEffect(() => {
+    refreshAiItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate API call delay
-    setTimeout(() => {
-      // If list is empty, reload data to allow user to test again (Demo feature)
-      if (aiItems.length === 0) {
-        refreshAiItems();
-      }
-      setIsRefreshing(false);
-    }, 1200);
+    try {
+      refreshAiItems();
+    } finally {
+      // Add a small delay for UX
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
   };
 
   const handleConfirmAllClick = () => {
@@ -32,25 +41,110 @@ const AiAudit: React.FC = () => {
     setIsConfirmAllModalOpen(true);
   };
 
-  const handleConfirmAllAction = () => {
-    setAiItems([]);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
-    // In a real app, this would send data to the backend
+  const handleConfirmAllAction = async () => {
+    if (!token) return;
+
+    // 只确认信息完整的记录（分类、金额、日期完整）
+    const completeItems = aiItems.filter(item =>
+      item.categoryId && item.amount > 0 && item.date
+    );
+
+    if (completeItems.length === 0) {
+      setToastMessage('没有信息完整的记录可确认');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      setIsConfirmAllModalOpen(false);
+      return;
+    }
+
+    setIsConfirming(true);
+    try {
+      // 逐个确认
+      for (const item of completeItems) {
+        if (!item.categoryId) continue;
+
+        // 转换日期格式
+        let dateStr = item.date;
+        const match = item.date.match(/(\d{4})年(\d{2})月(\d{2})日/);
+        if (match) {
+          dateStr = `${match[1]}-${match[2]}-${match[3]}`;
+        }
+
+        await api.aiItems.confirm(
+          item.id,
+          {
+            type: item.type,
+            amount: item.amount,
+            description: item.description,
+            date: dateStr,
+            categoryId: item.categoryId,
+          },
+          token
+        );
+      }
+
+      // 刷新列表
+      refreshAiItems();
+      setToastMessage(`已成功确认 ${completeItems.length} 条记录`);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error('Failed to confirm all items:', error);
+      setToastMessage('确认失败，请重试');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsConfirming(false);
+      setIsConfirmAllModalOpen(false);
+    }
   };
 
   const handleConfirmItemClick = (item: AiPendingItem) => {
     setConfirmingItem(item);
   };
 
-  const handleRealConfirm = () => {
-    if (confirmingItem) {
-      setAiItems(prev => prev.filter(item => item.id !== confirmingItem.id));
-      setConfirmingItem(null);
-      
-      // Show Success Toast
+  const handleRealConfirm = async () => {
+    if (!confirmingItem || !token || !confirmingItem.categoryId) {
+      setToastMessage('请先选择分类');
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
+    setIsConfirming(true);
+    try {
+      // 转换日期格式
+      let dateStr = confirmingItem.date;
+      const match = confirmingItem.date.match(/(\d{4})年(\d{2})月(\d{2})日/);
+      if (match) {
+        dateStr = `${match[1]}-${match[2]}-${match[3]}`;
+      }
+
+      await api.aiItems.confirm(
+        confirmingItem.id,
+        {
+          type: confirmingItem.type,
+          amount: confirmingItem.amount,
+          description: confirmingItem.description,
+          date: dateStr,
+          categoryId: confirmingItem.categoryId,
+        },
+        token
+      );
+
+      // 从列表中移除已确认的项
+      setAiItems(prev => prev.filter(item => item.id !== confirmingItem.id));
+      setConfirmingItem(null);
+      setToastMessage('已成功记入账本');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error('Failed to confirm AI item:', error);
+      setToastMessage('确认失败，请重试');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsConfirming(false);
     }
   };
 
@@ -59,7 +153,7 @@ const AiAudit: React.FC = () => {
   };
 
   const handleSaveModal = (updatedItem: AiPendingItem) => {
-    setAiItems(prev => prev.map(item => 
+    setAiItems(prev => prev.map(item =>
       item.id === updatedItem.id ? updatedItem : item
     ));
     setEditingItem(null);

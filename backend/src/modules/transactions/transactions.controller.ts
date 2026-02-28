@@ -10,6 +10,7 @@ import {
   UseGuards,
   Req,
   Header,
+  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +26,7 @@ import {
   DashboardSummaryDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Readable } from 'stream';
 
 @ApiTags('Transactions')
 @ApiBearerAuth()
@@ -47,22 +49,18 @@ export class TransactionsController {
 
   @Get('export')
   @ApiOperation({ summary: '导出交易记录为CSV' })
-  @Header('Content-Type', 'text/csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="transactions.csv"')
   async export(@Req() req, @Query() filterDto: FilterTransactionDto) {
-    return this.transactionsService.exportToCsv(req.user.id, filterDto);
-  }
-
-  @Get('summary')
-  @ApiOperation({ summary: '获取交易统计摘要' })
-  @ApiQuery({ name: 'startDate', required: false })
-  @ApiQuery({ name: 'endDate', required: false })
-  async getSummary(
-    @Req() req,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    return this.transactionsService.getSummary(req.user.id, startDate, endDate);
+    const csv = await this.transactionsService.exportToCsv(
+      req.user.id,
+      filterDto,
+    );
+    // Add BOM for Excel to recognize UTF-8
+    const bom = '\uFEFF';
+    const csvWithBom = bom + csv;
+    const stream = Readable.from(csvWithBom);
+    return new StreamableFile(stream);
   }
 
   @Get('dashboard-summary')
