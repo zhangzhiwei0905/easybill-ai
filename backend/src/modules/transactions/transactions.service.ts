@@ -43,6 +43,11 @@ export class TransactionsService {
       search,
       page = 1,
       pageSize = 20,
+      source,
+      sortBy = 'date',
+      sortOrder = 'desc',
+      minAmount,
+      maxAmount,
     } = filterDto;
 
     const where: any = { userId };
@@ -53,6 +58,10 @@ export class TransactionsService {
 
     if (categoryId) {
       where.categoryId = categoryId;
+    }
+
+    if (source) {
+      where.source = source;
     }
 
     if (startDate || endDate) {
@@ -72,8 +81,44 @@ export class TransactionsService {
       };
     }
 
+    // Amount filter (compare absolute values)
+    if (minAmount !== undefined || maxAmount !== undefined) {
+      where.OR = [];
+      // For EXPENSE (negative amounts stored as positive)
+      const expenseConditions: any = { type: 'EXPENSE' };
+      if (minAmount !== undefined) {
+        expenseConditions.amount = { gte: minAmount };
+      }
+      if (maxAmount !== undefined) {
+        expenseConditions.amount = {
+          ...expenseConditions.amount,
+          lte: maxAmount,
+        };
+      }
+      // For INCOME (positive amounts)
+      const incomeConditions: any = { type: 'INCOME' };
+      if (minAmount !== undefined) {
+        incomeConditions.amount = { gte: minAmount };
+      }
+      if (maxAmount !== undefined) {
+        incomeConditions.amount = {
+          ...incomeConditions.amount,
+          lte: maxAmount,
+        };
+      }
+      where.OR.push(expenseConditions, incomeConditions);
+    }
+
     const skip = (page - 1) * pageSize;
     const take = pageSize;
+
+    // Map sortBy to actual database field
+    const orderByField =
+      sortBy === 'date'
+        ? 'transactionDate'
+        : sortBy === 'amount'
+          ? 'amount'
+          : 'createdAt';
 
     const [transactions, total] = await Promise.all([
       this.prisma.transaction.findMany({
@@ -81,7 +126,7 @@ export class TransactionsService {
         skip,
         take,
         orderBy: {
-          createdAt: 'desc',
+          [orderByField]: sortOrder,
         },
         include: {
           category: true,
@@ -301,6 +346,65 @@ export class TransactionsService {
       {} as Record<string, { amount: number; count: number }>,
     );
 
+    // Generate trend data based on the requested date range
+    const trendData: { date: string; amount: number }[] = [];
+
+    // Determine the date range for trend data
+    const trendStartDate = monthStart ? new Date(monthStart) : new Date();
+    const trendEndDate = monthEnd ? new Date(monthEnd) : new Date();
+
+    // Set to start/end of day
+    trendStartDate.setHours(0, 0, 0, 0);
+    trendEndDate.setHours(23, 59, 59, 999);
+
+    // Fetch all expenses in the date range in one query
+    const expensesInRange = await this.prisma.transaction.findMany({
+      where: {
+        userId,
+        type: 'EXPENSE',
+        transactionDate: {
+          gte: trendStartDate,
+          lte: trendEndDate,
+        },
+      },
+      select: {
+        transactionDate: true,
+        amount: true,
+      },
+    });
+
+    // Group by date and sum amounts
+    const expenseByDate = new Map<string, number>();
+    for (const expense of expensesInRange) {
+      const dateKey = expense.transactionDate.toISOString().split('T')[0];
+      const current = expenseByDate.get(dateKey) || 0;
+      expenseByDate.set(dateKey, current + Math.abs(Number(expense.amount)));
+    }
+
+    // Calculate days between start and end
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysDiff = Math.ceil(
+      (trendEndDate.getTime() - trendStartDate.getTime()) / msPerDay,
+    );
+
+    // Limit to max 90 days to avoid performance issues
+    const maxDays = Math.min(daysDiff + 1, 90);
+
+    for (let i = 0; i < maxDays; i++) {
+      const date = new Date(trendStartDate);
+      date.setDate(date.getDate() + i);
+      const dateKey = date.toISOString().split('T')[0];
+      const amount = expenseByDate.get(dateKey) || 0;
+
+      // Only include days with expenses > 0
+      if (amount > 0) {
+        trendData.push({
+          date: dateKey,
+          amount,
+        });
+      }
+    }
+
     return {
       allTime: {
         totalIncome: allTimeTotalIncome,
@@ -313,6 +417,7 @@ export class TransactionsService {
         balance: monthBalance,
         transactionCount: monthTransactions.length,
         categoryStats,
+        trendData,
       },
     };
   }

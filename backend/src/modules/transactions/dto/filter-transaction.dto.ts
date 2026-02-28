@@ -6,6 +6,8 @@ import {
   IsInt,
   Min,
   IsEnum,
+  IsIn,
+  IsNumber,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -53,4 +55,47 @@ export class FilterTransactionDto {
   @IsInt()
   @Min(1)
   pageSize?: number = 20;
+
+  @ApiProperty({
+    description: '来源类型',
+    enum: ['AI_EXTRACTED', 'MANUAL'],
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(['AI_EXTRACTED', 'MANUAL'])
+  source?: string;
+
+  @ApiProperty({
+    description: '排序字段',
+    enum: ['date', 'amount', 'createdAt'],
+    required: false,
+    default: 'date',
+  })
+  @IsOptional()
+  @IsIn(['date', 'amount', 'createdAt'])
+  sortBy?: string;
+
+  @ApiProperty({
+    description: '排序方向',
+    enum: ['asc', 'desc'],
+    required: false,
+    default: 'desc',
+  })
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: string;
+
+  @ApiProperty({ description: '最小金额（绝对值）', required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  minAmount?: number;
+
+  @ApiProperty({ description: '最大金额（绝对值）', required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  maxAmount?: number;
 }

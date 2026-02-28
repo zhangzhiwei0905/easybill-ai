@@ -406,7 +406,17 @@ export class AiItemsService {
       `Created AI pending item: ${aiItem.id}, confidence: ${confidence}`,
     );
 
-    return aiItem;
+    // 返回结果，将 categoryId 放在 category 对象中，避免重复
+    const { categoryId: _, ...rest } = aiItem;
+    return {
+      ...rest,
+      category: aiItem.category
+        ? {
+            ...aiItem.category,
+            id: aiItem.categoryId,
+          }
+        : null,
+    } as any;
   }
 
   /**

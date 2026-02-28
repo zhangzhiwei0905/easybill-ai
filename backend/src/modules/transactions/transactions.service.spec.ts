@@ -20,7 +20,7 @@ describe('TransactionsService', () => {
     categoryId,
     transactionDate: new Date('2026-02-25'),
     description: 'Test transaction',
-    accountId: null,
+    source: 'MANUAL',
     aiItemId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -28,7 +28,7 @@ describe('TransactionsService', () => {
       id: categoryId,
       name: '餐饮美食',
       icon: '🍔',
-      color: '#FF6B6B',
+      colorClass: 'bg-red-100 text-red-600',
       type: 'EXPENSE',
     },
   };
@@ -126,7 +126,11 @@ describe('TransactionsService', () => {
         date: '2026-02-25',
       };
 
-      const incomeTransaction = { ...mockTransaction, type: 'INCOME', amount: new Decimal(100) };
+      const incomeTransaction = {
+        ...mockTransaction,
+        type: 'INCOME',
+        amount: new Decimal(100),
+      };
       mockPrismaService.transaction.create.mockResolvedValue(incomeTransaction);
 
       await service.create(userId, createDto);
@@ -143,7 +147,9 @@ describe('TransactionsService', () => {
 
   describe('findAll', () => {
     it('should return paginated transactions', async () => {
-      mockPrismaService.transaction.findMany.mockResolvedValue([mockTransaction]);
+      mockPrismaService.transaction.findMany.mockResolvedValue([
+        mockTransaction,
+      ]);
       mockPrismaService.transaction.count.mockResolvedValue(1);
 
       const result = await service.findAll(userId, { page: 1, pageSize: 20 });
@@ -158,7 +164,9 @@ describe('TransactionsService', () => {
     });
 
     it('should filter by type', async () => {
-      mockPrismaService.transaction.findMany.mockResolvedValue([mockTransaction]);
+      mockPrismaService.transaction.findMany.mockResolvedValue([
+        mockTransaction,
+      ]);
       mockPrismaService.transaction.count.mockResolvedValue(1);
 
       await service.findAll(userId, { type: 'EXPENSE', page: 1, pageSize: 20 });
@@ -173,7 +181,9 @@ describe('TransactionsService', () => {
     });
 
     it('should filter by date range', async () => {
-      mockPrismaService.transaction.findMany.mockResolvedValue([mockTransaction]);
+      mockPrismaService.transaction.findMany.mockResolvedValue([
+        mockTransaction,
+      ]);
       mockPrismaService.transaction.count.mockResolvedValue(1);
 
       await service.findAll(userId, {
@@ -198,7 +208,9 @@ describe('TransactionsService', () => {
 
   describe('findOne', () => {
     it('should return a transaction by id', async () => {
-      mockPrismaService.transaction.findUnique.mockResolvedValue(mockTransaction);
+      mockPrismaService.transaction.findUnique.mockResolvedValue(
+        mockTransaction,
+      );
 
       const result = await service.findOne(userId, transactionId);
 
@@ -212,7 +224,9 @@ describe('TransactionsService', () => {
     it('should throw NotFoundException if transaction not found', async () => {
       mockPrismaService.transaction.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne(userId, transactionId)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(userId, transactionId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException if transaction belongs to another user', async () => {
@@ -221,7 +235,9 @@ describe('TransactionsService', () => {
         userId: 'another-user',
       });
 
-      await expect(service.findOne(userId, transactionId)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(userId, transactionId)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -232,7 +248,9 @@ describe('TransactionsService', () => {
         description: 'Updated transaction',
       };
 
-      mockPrismaService.transaction.findUnique.mockResolvedValue(mockTransaction);
+      mockPrismaService.transaction.findUnique.mockResolvedValue(
+        mockTransaction,
+      );
       mockPrismaService.transaction.update.mockResolvedValue({
         ...mockTransaction,
         ...updateDto,
@@ -247,13 +265,17 @@ describe('TransactionsService', () => {
     it('should throw NotFoundException if transaction not found', async () => {
       mockPrismaService.transaction.findUnique.mockResolvedValue(null);
 
-      await expect(service.update(userId, transactionId, {})).rejects.toThrow(NotFoundException);
+      await expect(service.update(userId, transactionId, {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('remove', () => {
     it('should delete a transaction successfully', async () => {
-      mockPrismaService.transaction.findUnique.mockResolvedValue(mockTransaction);
+      mockPrismaService.transaction.findUnique.mockResolvedValue(
+        mockTransaction,
+      );
       mockPrismaService.transaction.delete.mockResolvedValue(mockTransaction);
 
       await service.remove(userId, transactionId);
@@ -266,7 +288,9 @@ describe('TransactionsService', () => {
     it('should throw NotFoundException if transaction not found', async () => {
       mockPrismaService.transaction.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove(userId, transactionId)).rejects.toThrow(NotFoundException);
+      await expect(service.remove(userId, transactionId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

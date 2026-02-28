@@ -72,7 +72,6 @@ export interface Transaction {
     type: 'EXPENSE' | 'INCOME';
     amount: number;
     description: string;
-    subDescription?: string;
     transactionDate: string;
     source: 'AI_EXTRACTED' | 'MANUAL';
     aiItemId?: string;
@@ -118,6 +117,10 @@ export interface DashboardSummary {
                 count: number;
             };
         };
+        trendData: {
+            date: string;
+            amount: number;
+        }[];
     };
 }
 
@@ -145,6 +148,11 @@ export interface FilterTransactionParams {
     search?: string;
     page?: number;
     pageSize?: number;
+    source?: 'AI_EXTRACTED' | 'MANUAL';
+    sortBy?: 'date' | 'amount' | 'createdAt';
+    sortOrder?: 'asc' | 'desc';
+    minAmount?: number;
+    maxAmount?: number;
 }
 
 export const api = {
@@ -214,6 +222,11 @@ export const api = {
             if (params.search) query.append('search', params.search);
             if (params.page) query.append('page', params.page.toString());
             if (params.pageSize) query.append('pageSize', params.pageSize.toString());
+            if (params.source) query.append('source', params.source);
+            if (params.sortBy) query.append('sortBy', params.sortBy);
+            if (params.sortOrder) query.append('sortOrder', params.sortOrder);
+            if (params.minAmount !== undefined) query.append('minAmount', params.minAmount.toString());
+            if (params.maxAmount !== undefined) query.append('maxAmount', params.maxAmount.toString());
 
             const queryString = query.toString();
             return request<PaginatedTransactions>('GET', `/transactions${queryString ? '?' + queryString : ''}`, undefined, token);
@@ -249,15 +262,6 @@ export const api = {
             }
 
             return res.blob();
-        },
-
-        summary: (token: string, startDate?: string, endDate?: string) => {
-            const query = new URLSearchParams();
-            if (startDate) query.append('startDate', startDate);
-            if (endDate) query.append('endDate', endDate);
-
-            const queryString = query.toString();
-            return request<TransactionSummary>('GET', `/transactions/summary${queryString ? '?' + queryString : ''}`, undefined, token);
         },
 
         dashboardSummary: (token: string, monthStart?: string, monthEnd?: string) => {

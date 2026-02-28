@@ -17,13 +17,35 @@ const Settings: React.FC = () => {
   const [showWebhookKey, setShowWebhookKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Load webhook key
+  // Load user profile on mount
   useEffect(() => {
-    if (token && user) {
+    if (token) {
+      loadUserProfile();
       loadWebhookKey();
     }
-  }, [token, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const loadUserProfile = async () => {
+    setProfileLoading(true);
+    try {
+      const profile = await api.users.getProfile(token!);
+      setCurrentUser(profile);
+      // Update auth context as well
+      const existingToken = localStorage.getItem('easybill_token') || '';
+      const existingRefresh = localStorage.getItem('easybill_refresh_token') || '';
+      login(profile, existingToken, existingRefresh);
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      // Fallback to current user from context
+      setCurrentUser(user);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const loadWebhookKey = async () => {
     try {
@@ -110,7 +132,7 @@ const Settings: React.FC = () => {
   -H "Content-Type: application/json" \\
   -d '{
     "rawText": "【银行】支出100元",
-    "userId": "${user?.id}",
+    "userId": "${currentUser?.id || user?.id}",
     "webhookKey": "${webhookKey || 'your-webhook-key'}"
   }'`;
 
@@ -143,25 +165,37 @@ const Settings: React.FC = () => {
 
         {/* Profile Card */}
         <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 mb-8 flex items-center gap-4">
-          <div
-            className="size-14 md:size-16 rounded-full bg-cover bg-center border border-slate-200 shrink-0"
-            style={{ backgroundImage: `url("${user?.avatar || 'https://picsum.photos/100/100'}")` }}
-          ></div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-text-main truncate">{user?.name}</h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-text-sub whitespace-nowrap">{user?.email || 'ID: 8839201'}</span>
-              {user?.isPro && (
-                <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap">{t('nav.pro')}</span>
-              )}
+          {profileLoading ? (
+            <div className="flex items-center gap-4 flex-1">
+              <div className="size-14 md:size-16 rounded-full bg-slate-200 animate-pulse shrink-0"></div>
+              <div className="flex-1">
+                <div className="h-5 w-24 bg-slate-200 animate-pulse rounded mb-2"></div>
+                <div className="h-4 w-32 bg-slate-200 animate-pulse rounded"></div>
+              </div>
             </div>
-          </div>
-          <button
-            onClick={() => setIsEditProfileModalOpen(true)}
-            className="shrink-0 px-3 py-1.5 md:px-4 md:py-2 border border-slate-200 rounded-lg text-xs md:text-sm font-medium hover:bg-slate-50 transition-colors"
-          >
-            {t('settings.editProfileTitle')}
-          </button>
+          ) : (
+            <>
+              <div
+                className="size-14 md:size-16 rounded-full bg-cover bg-center border border-slate-200 shrink-0"
+                style={{ backgroundImage: `url("${currentUser?.avatar || 'https://picsum.photos/100/100'}")` }}
+              ></div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-text-main truncate">{currentUser?.name}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm text-text-sub whitespace-nowrap">{currentUser?.email || 'ID: 8839201'}</span>
+                  {currentUser?.isPro && (
+                    <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap">{t('nav.pro')}</span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEditProfileModalOpen(true)}
+                className="shrink-0 px-3 py-1.5 md:px-4 md:py-2 border border-slate-200 rounded-lg text-xs md:text-sm font-medium hover:bg-slate-50 transition-colors"
+              >
+                {t('settings.editProfileTitle')}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Webhook Configuration Card */}
@@ -297,9 +331,9 @@ const Settings: React.FC = () => {
       />
 
       {/* Edit Profile Modal */}
-      {isEditProfileModalOpen && user && (
+      {isEditProfileModalOpen && (currentUser || user) && (
         <EditProfileModal
-          user={user}
+          user={currentUser || user!}
           onClose={() => setIsEditProfileModalOpen(false)}
           onSave={handleUpdateProfile}
         />

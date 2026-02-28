@@ -20,7 +20,6 @@ export interface Transaction {
   type: 'EXPENSE' | 'INCOME';
   amount: number;
   description: string;
-  subDescription?: string;
   transactionDate: string; // ISO date string
   source: 'AI_EXTRACTED' | 'MANUAL';
   aiItemId?: string;
@@ -37,7 +36,6 @@ export interface TransactionDisplay {
   categoryIcon: string;
   categoryColor: string;
   description: string;
-  subDescription?: string;
   source: 'AI_EXTRACTED' | 'MANUAL';
   amount: number;
   type: 'EXPENSE' | 'INCOME';
