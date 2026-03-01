@@ -128,9 +128,12 @@ export const translations = {
       needConfirm: '需确认',
       checkAmount: '请核对金额',
       allConfirmed: '所有记录已确认',
-      refreshHint: '点击“刷新列表”可获取最新数据',
+      refreshHint: '点击”刷新列表”可获取最新数据',
       confirmAllTitle: '确认全部记录',
-      confirmAllMsg: '您确定要将当前列表中的 %count% 条记录全部标记为确认并记入账本吗？'
+      confirmAllMsg: '您确定要将当前列表中的 %count% 条记录全部标记为确认并记入账本吗？',
+      confidenceHigh: '高',
+      confidenceMedium: '中',
+      confidenceLow: '低',
     },
     transactions: {
       title: '账单明细',
@@ -266,7 +269,10 @@ export const translations = {
       allConfirmed: 'All records confirmed',
       refreshHint: 'Click "Refresh" to get latest data',
       confirmAllTitle: 'Confirm All',
-      confirmAllMsg: 'Are you sure you want to confirm all %count% records and add them to the ledger?'
+      confirmAllMsg: 'Are you sure you want to confirm all %count% records and add them to the ledger?',
+      confidenceHigh: 'High',
+      confidenceMedium: 'Medium',
+      confidenceLow: 'Low',
     },
     transactions: {
       title: 'Transactions',

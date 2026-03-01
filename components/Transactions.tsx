@@ -221,35 +221,25 @@ const Transactions: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Load transactions when filters/pagination/sorting change (NOT summary)
+  // Load transactions when filters/pagination/sorting/date change
   useEffect(() => {
     if (!token || !hasLoadedRef.current) return;
-
-    // Only load transactions, not summary
     loadTransactions();
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, itemsPerPage, searchQuery, filters.type, filters.source, filters.minAmount, filters.maxAmount, sortBy, sortOrder, headerSourceFilter, headerCategoryFilter]);
+  }, [currentDate, currentPage, itemsPerPage, searchQuery, filters.type, filters.source, filters.minAmount, filters.maxAmount, sortBy, sortOrder, headerSourceFilter, headerCategoryFilter]);
 
-  // Handle date changes - reload both transactions and summary
+  // Reload summary only when date changes
+  useEffect(() => {
+    if (!token || !hasLoadedRef.current) return;
+    loadSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, token]);
+
+  // Handle date changes
   const handleDateChange = useCallback((newDate: string) => {
     setCurrentDate(newDate);
     setCurrentPage(1);
   }, []);
-
-  // Reload when date changes
-  const prevDateRef = useRef(currentDate);
-  useEffect(() => {
-    if (!token || !hasLoadedRef.current) return;
-
-    if (prevDateRef.current !== currentDate) {
-      prevDateRef.current = currentDate;
-      // Date change: reload both transactions and summary
-      loadTransactions();
-      loadSummary();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate, token]);
 
   // Refresh data when transaction is added/updated/deleted
   useEffect(() => {

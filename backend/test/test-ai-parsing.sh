@@ -182,7 +182,7 @@ done
 # ===========================================
 echo -e "${BLUE}[3/7] 测试获取待审核列表...${NC}"
 
-LIST_RESPONSE=$(curl -s -X GET "${API_BASE}/ai-items?status=PENDING" \
+LIST_RESPONSE=$(curl -s -X GET "${API_BASE}/ai-items?status=NEEDS_MANUAL" \
     -H "Authorization: Bearer ${TOKEN}")
 
 TOTAL_PENDING=$(echo $LIST_RESPONSE | jq -r '.data.pagination.total')

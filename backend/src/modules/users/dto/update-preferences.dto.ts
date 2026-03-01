@@ -17,4 +17,14 @@ export class UpdatePreferencesDto {
     @IsString()
     @IsIn(['light', 'dark', 'system'])
     theme?: string;
+
+    @ApiPropertyOptional({
+        example: 'HIGH_ONLY',
+        enum: ['HIGH_ONLY', 'HIGH_AND_MEDIUM', 'MANUAL_ONLY'],
+        description: 'Auto-confirm threshold: HIGH_ONLY (only HIGH confidence), HIGH_AND_MEDIUM (HIGH and MEDIUM), MANUAL_ONLY (all manual)'
+    })
+    @IsOptional()
+    @IsString()
+    @IsIn(['HIGH_ONLY', 'HIGH_AND_MEDIUM', 'MANUAL_ONLY'])
+    autoConfirmThreshold?: string;
 }

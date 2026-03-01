@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Navigate, NavLink, useLocation, Outlet, useOutletContext } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { LanguageProvider, useLanguage } from './LanguageContext';
@@ -34,16 +34,24 @@ const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
 function transformAiItem(item: AiPendingItemApiResponse): AiPendingItem {
   const categoryConfig = item.category ? CATEGORY_CONFIG[item.category.name] : { icon: 'help', color: 'bg-gray-100 text-gray-600' };
 
+  // 解析日期并生成显示格式和 ISO 格式
+  const dateObj = new Date(item.parsedDate);
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+
   return {
     id: item.id,
     rawText: item.rawText,
-    date: new Date(item.parsedDate).toLocaleDateString('zh-CN'),
+    date: `${year}年${month}月${day}日`, // 显示格式
+    rawDate: `${year}-${month}-${day}`, // ISO 8601 格式，用于 API 调用
     category: item.category?.name || '未分类',
     categoryIcon: categoryConfig.icon,
     categoryColor: categoryConfig.color,
     description: item.description,
     amount: Number(item.amount),
     confidence: item.confidence,
+    parseError: item.parseError,
     type: item.type,
     status: item.status,
     categoryId: item.categoryId || undefined,
@@ -74,21 +82,29 @@ const AppLayout: React.FC = () => {
   const [aiItemsLoading, setAiItemsLoading] = useState(true);
   const [transactionRefreshKey, setTransactionRefreshKey] = useState(0);
 
+  // 防止 StrictMode 下重复调用
+  const isLoadingRef = useRef(false);
+
   // 从后端获取 AI 待审核项
   const fetchAiItems = async () => {
     if (!token) return;
 
+    // 防止重复请求
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+
     setAiItemsLoading(true);
     try {
-      const response = await api.aiItems.findAll(token, 'PENDING');
+      const response = await api.aiItems.findAll(token, 'NEEDS_MANUAL');
       const transformedItems = response.items
-        .filter((item: AiPendingItemApiResponse) => item.status === 'PENDING' || item.status === 'NEEDS_MANUAL')
+        .filter((item: AiPendingItemApiResponse) => item.status === 'NEEDS_MANUAL')
         .map(transformAiItem);
       setAiItems(transformedItems);
     } catch (error) {
       console.error('Failed to fetch AI items:', error);
     } finally {
       setAiItemsLoading(false);
+      isLoadingRef.current = false;
     }
   };
 

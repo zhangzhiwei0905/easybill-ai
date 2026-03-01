@@ -20,7 +20,7 @@ const AiAudit: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('已成功记入账本');
   const [isConfirming, setIsConfirming] = useState(false);
 
-  // 页面进入时获取最新数据
+  // 进入页面时刷新数据，获取最新的待审核记录
   useEffect(() => {
     refreshAiItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,20 +63,13 @@ const AiAudit: React.FC = () => {
       for (const item of completeItems) {
         if (!item.categoryId) continue;
 
-        // 转换日期格式
-        let dateStr = item.date;
-        const match = item.date.match(/(\d{4})年(\d{2})月(\d{2})日/);
-        if (match) {
-          dateStr = `${match[1]}-${match[2]}-${match[3]}`;
-        }
-
         await api.aiItems.confirm(
           item.id,
           {
             type: item.type,
             amount: item.amount,
             description: item.description,
-            date: dateStr,
+            date: item.rawDate, // 使用 ISO 8601 格式日期
             categoryId: item.categoryId,
           },
           token
@@ -113,20 +106,13 @@ const AiAudit: React.FC = () => {
 
     setIsConfirming(true);
     try {
-      // 转换日期格式
-      let dateStr = confirmingItem.date;
-      const match = confirmingItem.date.match(/(\d{4})年(\d{2})月(\d{2})日/);
-      if (match) {
-        dateStr = `${match[1]}-${match[2]}-${match[3]}`;
-      }
-
       await api.aiItems.confirm(
         confirmingItem.id,
         {
           type: confirmingItem.type,
           amount: confirmingItem.amount,
           description: confirmingItem.description,
-          date: dateStr,
+          date: confirmingItem.rawDate, // 使用 ISO 8601 格式日期
           categoryId: confirmingItem.categoryId,
         },
         token
@@ -241,8 +227,8 @@ const AiAudit: React.FC = () => {
                       {/* Description */}
                       <div className="flex flex-col gap-1 col-span-2">
                         <span className="text-xs text-text-sub">{t('common.desc')}</span>
-                        <div 
-                          className="flex items-center gap-2 group/edit cursor-pointer hover:opacity-80 transition-opacity" 
+                        <div
+                          className="flex items-center gap-2 group/edit cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={(e) => { e.stopPropagation(); handleEditItem(item); }}
                         >
                           <span className={`font-medium text-text-main text-sm md:text-base border-b border-transparent transition-colors hover:border-slate-300 ${item.confidence === 'LOW' ? 'border-dashed border-slate-400' : ''}`}>
@@ -250,6 +236,13 @@ const AiAudit: React.FC = () => {
                           </span>
                           <span className="material-symbols-outlined text-gray-300 text-sm opacity-0 group-hover/edit:opacity-100 transition-opacity">edit</span>
                         </div>
+                        {/* 显示解析错误信息 */}
+                        {item.parseError && (
+                          <div className="flex items-center gap-1.5 mt-1 text-xs text-red-500 bg-red-50 px-2 py-1 rounded">
+                            <span className="material-symbols-outlined text-sm">warning</span>
+                            <span>{item.parseError}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

@@ -59,6 +59,7 @@ model UserPreference {
   language             String   @default("zh") @db.VarChar(5)
   theme                String   @default("default") @db.VarChar(20)
   notificationsEnabled Boolean  @default(true) @map("notifications_enabled")
+  autoConfirmThreshold String   @default("HIGH_ONLY") @map("auto_confirm_threshold") @db.VarChar(20)
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -93,6 +94,7 @@ model Transaction {
   transactionDate DateTime @map("transaction_date") @db.Date
   source          String   @db.VarChar(20)
   aiItemId        String?  @map("ai_item_id") @db.Uuid
+  confidence      String?  @db.VarChar(10)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -116,6 +118,7 @@ model AiPendingItem {
   description String   @db.VarChar(255)
   parsedDate  DateTime @map("parsed_date") @db.Date
   confidence  String   @db.VarChar(10)
+  parseError  String?  @map("parse_error") @db.VarChar(500)
   status      String   @default("PENDING") @db.VarChar(20)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

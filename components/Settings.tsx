@@ -89,7 +89,8 @@ const Settings: React.FC = () => {
 
   // Settings State
   const [currency, setCurrency] = useState('CNY');
-  const [activeSheet, setActiveSheet] = useState<'CURRENCY' | 'LANGUAGE' | null>(null);
+  const [autoConfirmThreshold, setAutoConfirmThreshold] = useState('HIGH_ONLY');
+  const [activeSheet, setActiveSheet] = useState<'CURRENCY' | 'LANGUAGE' | 'AUTO_CONFIRM' | null>(null);
 
   const menuGroups = [
     {
@@ -116,6 +117,17 @@ const Settings: React.FC = () => {
           onClick: () => setActiveSheet('LANGUAGE')
         },
         { icon: 'palette', label: t('settings.theme'), value: t('settings.default') },
+      ]
+    },
+    {
+      title: 'AI 自动入账',
+      items: [
+        {
+          icon: 'smart_toy',
+          label: '自动入账阈值',
+          value: autoConfirmThreshold === 'HIGH_ONLY' ? '仅高置信度' : autoConfirmThreshold === 'HIGH_AND_MEDIUM' ? '高+中置信度' : '全部手动',
+          onClick: () => setActiveSheet('AUTO_CONFIRM')
+        },
       ]
     },
     {
@@ -367,6 +379,30 @@ const Settings: React.FC = () => {
         />
       )}
 
+      {/* Auto Confirm Threshold Selection Modal */}
+      {activeSheet === 'AUTO_CONFIRM' && (
+        <SelectionModal
+          title="自动入账阈值"
+          options={[
+            { label: '仅高置信度', value: 'HIGH_ONLY', icon: 'shield', description: '只有 AI 高度确信的交易才会自动入账' },
+            { label: '高+中置信度', value: 'HIGH_AND_MEDIUM', icon: 'verified', description: '高和中等置信度的交易都会自动入账' },
+            { label: '全部手动确认', value: 'MANUAL_ONLY', icon: 'pan_tool', description: '所有交易都需要手动确认后才入账' }
+          ]}
+          currentValue={autoConfirmThreshold}
+          onSelect={async (val) => {
+            setAutoConfirmThreshold(val);
+            setActiveSheet(null);
+            // 保存到后端
+            try {
+              await api.users.updatePreferences(token!, { autoConfirmThreshold: val });
+            } catch (error) {
+              console.error('Failed to update auto confirm threshold:', error);
+            }
+          }}
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
+
       {/* Regenerate Webhook Key Modal */}
       <ConfirmActionModal
         isOpen={isRegenerateModalOpen}
@@ -387,7 +423,7 @@ const Settings: React.FC = () => {
 // Internal reusable Selection Modal Component
 interface SelectionModalProps {
   title: string;
-  options: { label: string; value: string; icon: string }[];
+  options: { label: string; value: string; icon: string; description?: string }[];
   currentValue: string;
   onSelect: (value: string) => void;
   onClose: () => void;
@@ -421,9 +457,14 @@ const SelectionModal: React.FC<SelectionModalProps> = ({ title, options, current
                 }`}>
                 <span className="material-symbols-outlined text-[20px]">{option.icon}</span>
               </div>
-              <span className={`flex-1 text-left text-sm ${currentValue === option.value ? 'font-bold' : 'font-medium'}`}>
-                {option.label}
-              </span>
+              <div className="flex-1 text-left">
+                <div className={`text-sm ${currentValue === option.value ? 'font-bold' : 'font-medium'}`}>
+                  {option.label}
+                </div>
+                {option.description && (
+                  <div className="text-xs text-text-sub mt-0.5">{option.description}</div>
+                )}
+              </div>
               {currentValue === option.value && (
                 <span className="material-symbols-outlined text-primary text-[20px]">check</span>
               )}

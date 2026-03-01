@@ -195,8 +195,8 @@ export const api = {
         getPreferences: (token: string) =>
             request<{ currency: string; language: string; theme: string }>('GET', '/users/preferences', undefined, token),
 
-        updatePreferences: (data: { currency?: string; language?: string; theme?: string }, token: string) =>
-            request<{ currency: string; language: string; theme: string }>('PUT', '/users/preferences', data, token),
+        updatePreferences: (data: { currency?: string; language?: string; theme?: string; autoConfirmThreshold?: string }, token: string) =>
+            request<{ currency: string; language: string; theme: string; autoConfirmThreshold: string }>('PUT', '/users/preferences', data, token),
 
         changePassword: (data: { oldPassword: string; newPassword: string }, token: string) =>
             request<{ message: string }>('PATCH', '/users/password', data, token),

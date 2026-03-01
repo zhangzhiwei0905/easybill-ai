@@ -285,7 +285,7 @@ export class AiItemsService {
   async getStatistics(userId: string) {
     const [pending, confirmed, rejected, needsManual] = await Promise.all([
       this.prisma.aiPendingItem.count({
-        where: { userId, status: 'PENDING' },
+        where: { userId, status: 'NEEDS_MANUAL' },
       }),
       this.prisma.aiPendingItem.count({
         where: { userId, status: 'CONFIRMED' },
@@ -355,16 +355,27 @@ export class AiItemsService {
 
   /**
    * 解析短信并创建待审核项
+   * - 根据用户配置的 autoConfirmThreshold 决定是否自动入账
+   * - HIGH_ONLY: 仅 HIGH 置信度自动入账
+   * - HIGH_AND_MEDIUM: HIGH 和 MEDIUM 置信度自动入账
+   * - MANUAL_ONLY: 全部需要手动确认
    */
-  async parseAndCreate(dto: ParseSmsDto): Promise<AiPendingItem> {
-    // 验证用户是否存在
+  async parseAndCreate(
+    dto: ParseSmsDto,
+  ): Promise<AiPendingItem & { autoConfirmed: boolean; transaction?: any }> {
+    // 验证用户是否存在，并获取用户偏好设置
     const user = await this.prisma.user.findUnique({
       where: { id: dto.userId },
+      include: { preferences: true },
     });
 
     if (!user) {
       throw new NotFoundException('用户不存在');
     }
+
+    // 获取用户的自动入账阈值配置，默认为 HIGH_ONLY
+    const autoConfirmThreshold =
+      user.preferences?.autoConfirmThreshold || 'HIGH_ONLY';
 
     // 调用 DeepSeek API
     const parsed = await this.callDeepSeekApi(dto.rawText);
@@ -378,13 +389,76 @@ export class AiItemsService {
     // 确定置信度
     const confidence = this.determineConfidence(parsed, categoryId);
 
-    // 根据置信度设置状态
-    const status = confidence === 'LOW' ? 'NEEDS_MANUAL' : 'PENDING';
-
     // 确保 amount 有效（不能为 null）
     const amount = parsed.amount && parsed.amount > 0 ? parsed.amount : 0;
 
-    // 创建待审核项
+    // 根据用户配置和置信度决定是否自动入账
+    let canAutoConfirm = false;
+
+    if (autoConfirmThreshold === 'HIGH_ONLY') {
+      // 仅 HIGH 置信度自动入账
+      canAutoConfirm =
+        confidence === 'HIGH' && amount > 0 && categoryId !== null;
+    } else if (autoConfirmThreshold === 'HIGH_AND_MEDIUM') {
+      // HIGH 和 MEDIUM 置信度自动入账
+      canAutoConfirm =
+        (confidence === 'HIGH' || confidence === 'MEDIUM') &&
+        amount > 0 &&
+        categoryId !== null;
+    } else if (autoConfirmThreshold === 'MANUAL_ONLY') {
+      // 全部需要手动确认
+      canAutoConfirm = false;
+    }
+
+    if (canAutoConfirm) {
+      // 用数据库事务同时创建 AiPendingItem(CONFIRMED) + Transaction
+      const result = await this.prisma.$transaction(async (tx) => {
+        const aiItem = await tx.aiPendingItem.create({
+          data: {
+            userId: dto.userId,
+            rawText: dto.rawText,
+            type: parsed.type,
+            amount,
+            description: parsed.description || '自动入账',
+            parsedDate: new Date(parsed.date),
+            categoryId,
+            confidence,
+            parseError: parsed.parseError,
+            status: 'CONFIRMED',
+          },
+          include: { category: true },
+        });
+
+        const transaction = await tx.transaction.create({
+          data: {
+            userId: dto.userId,
+            categoryId: categoryId!,
+            type: parsed.type,
+            amount,
+            description: parsed.description || '自动入账',
+            transactionDate: new Date(parsed.date),
+            source: 'AI_EXTRACTED',
+            aiItemId: aiItem.id,
+            confidence,
+          },
+          include: { category: true },
+        });
+
+        return { aiItem, transaction };
+      });
+
+      this.logger.log(
+        `Auto-confirmed AI item: ${result.aiItem.id}, confidence: ${confidence}, transaction: ${result.transaction.id}`,
+      );
+
+      return {
+        ...result.aiItem,
+        autoConfirmed: true,
+        transaction: result.transaction,
+      } as any;
+    }
+
+    // LOW 置信度 → 仅写 AiPendingItem，等待人工确认
     const aiItem = await this.prisma.aiPendingItem.create({
       data: {
         userId: dto.userId,
@@ -395,28 +469,17 @@ export class AiItemsService {
         parsedDate: new Date(parsed.date),
         categoryId,
         confidence,
-        status,
+        parseError: parsed.parseError,
+        status: 'NEEDS_MANUAL',
       },
-      include: {
-        category: true,
-      },
+      include: { category: true },
     });
 
     this.logger.log(
-      `Created AI pending item: ${aiItem.id}, confidence: ${confidence}`,
+      `Created AI pending item (needs manual): ${aiItem.id}, confidence: ${confidence}`,
     );
 
-    // 返回结果，将 categoryId 放在 category 对象中，避免重复
-    const { categoryId: _, ...rest } = aiItem;
-    return {
-      ...rest,
-      category: aiItem.category
-        ? {
-            ...aiItem.category,
-            id: aiItem.categoryId,
-          }
-        : null,
-    } as any;
+    return { ...aiItem, autoConfirmed: false } as any;
   }
 
   /**
