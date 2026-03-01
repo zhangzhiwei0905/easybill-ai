@@ -60,26 +60,30 @@ const AiAudit: React.FC = () => {
 
     setIsConfirming(true);
     try {
-      // 逐个确认
-      for (const item of completeItems) {
-        if (!item.categoryId) continue;
-
-        await api.aiItems.confirm(
-          item.id,
-          {
-            type: item.type,
-            amount: item.amount,
-            description: item.description,
-            date: item.rawDate, // 使用 ISO 8601 格式日期
-            categoryId: item.categoryId,
-          },
-          token
-        );
-      }
+      // 调用批量确认接口
+      const result = await api.aiItems.confirmBatch(
+        completeItems.map(item => ({
+          id: item.id,
+          type: item.type,
+          amount: item.amount,
+          description: item.description,
+          date: item.rawDate, // 使用 ISO 8601 格式日期
+          categoryId: item.categoryId!,
+        })),
+        token
+      );
 
       // 刷新列表
       refreshAiItems();
-      setToastMessage(`已成功确认 ${completeItems.length} 条记录`);
+
+      // 根据结果显示不同的提示
+      if (result.failedCount === 0) {
+        setToastMessage(`已成功入账 ${result.successCount} 条记录`);
+      } else if (result.successCount === 0) {
+        setToastMessage(`入账失败 ${result.failedCount} 条，请重试`);
+      } else {
+        setToastMessage(`成功入账 ${result.successCount} 条，失败 ${result.failedCount} 条`);
+      }
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
@@ -372,7 +376,7 @@ const AiAudit: React.FC = () => {
       {showToast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] bg-[#111418] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 fade-in duration-300">
           <span className="material-symbols-outlined text-success">check_circle</span>
-          <span className="font-bold text-sm">已成功记入账本</span>
+          <span className="font-bold text-sm">{toastMessage}</span>
         </div>
       )}
     </div>

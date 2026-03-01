@@ -18,6 +18,7 @@ import {
   UpdateAiItemDto,
   ConfirmAiItemDto,
   FilterAiItemDto,
+  BatchConfirmDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -110,6 +111,17 @@ export class AiItemsController {
     @Body() confirmDto: ConfirmAiItemDto,
   ) {
     return this.aiItemsService.confirm(req.user.id, id, confirmDto);
+  }
+
+  /**
+   * 批量确认入账
+   */
+  @Post('batch-confirm')
+  @ApiOperation({ summary: '批量确认入账' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async confirmBatch(@Req() req, @Body() batchDto: BatchConfirmDto) {
+    return this.aiItemsService.confirmBatch(req.user.id, batchDto);
   }
 
   /**

@@ -9,6 +9,7 @@ import AiAudit from './components/AiAudit';
 import AiAnalysis from './components/AiAnalysis';
 import Settings from './components/Settings';
 import Auth from './components/Auth';
+import Help from './components/Help';
 import ManualEntryModal from './components/ManualEntryModal';
 import { AiPendingItem, GlobalOutletContextType, AiPendingItemApiResponse } from './types';
 import { api } from './services/api';
@@ -172,6 +173,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/ai-audit" element={<AiAudit />} />
         <Route path="/analysis" element={<AiAnalysis />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/help" element={<Help />} />
       </Route>
 
       {/* Fallback */}
