@@ -133,7 +133,7 @@ const Settings: React.FC = () => {
     {
       title: t('settings.aboutGroup'),
       items: [
-        { icon: 'help', label: t('settings.help'), value: '' },
+        { icon: 'help', label: t('settings.help'), value: '', onClick: () => navigate('/help') },
         { icon: 'info', label: t('settings.about'), value: 'v2.1.0' },
       ]
     }

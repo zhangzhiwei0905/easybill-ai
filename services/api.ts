@@ -290,6 +290,9 @@ export const api = {
         confirm: (id: string, data: { type: string; amount: number; description: string; date: string; categoryId: string }, token: string) =>
             request<{ transaction: any; aiItem: any }>('POST', `/ai-items/${id}/confirm`, data, token),
 
+        confirmBatch: (items: Array<{ id: string; type: string; amount: number; description: string; date: string; categoryId: string }>, token: string) =>
+            request<{ successCount: number; failedCount: number; results: Array<{ id: string; success: boolean; error?: string; transaction?: any }> }>('POST', '/ai-items/batch-confirm', { items }, token),
+
         remove: (id: string, token: string) =>
             request<{ message: string }>('DELETE', `/ai-items/${id}`, undefined, token),
 

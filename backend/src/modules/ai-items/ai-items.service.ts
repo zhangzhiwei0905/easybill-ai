@@ -12,6 +12,7 @@ import {
   UpdateAiItemDto,
   ConfirmAiItemDto,
   FilterAiItemDto,
+  BatchConfirmDto,
 } from './dto';
 import {
   ParsedTransaction,
@@ -633,6 +634,107 @@ export class AiItemsService {
     });
 
     this.logger.log(`Rejected AI item ${id}`);
+  }
+
+  /**
+   * 批量确认入账
+   * 返回成功和失败的数量及详情
+   */
+  async confirmBatch(
+    userId: string,
+    batchDto: BatchConfirmDto,
+  ): Promise<{
+    successCount: number;
+    failedCount: number;
+    results: Array<{
+      id: string;
+      success: boolean;
+      error?: string;
+      transaction?: any;
+    }>;
+  }> {
+    const results: Array<{
+      id: string;
+      success: boolean;
+      error?: string;
+      transaction?: any;
+    }> = [];
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const item of batchDto.items) {
+      try {
+        // 验证待审核项存在且属于当前用户
+        const aiItem = await this.findOne(userId, item.id);
+
+        if (aiItem.status === 'CONFIRMED') {
+          results.push({
+            id: item.id,
+            success: false,
+            error: '该待审核项已确认入账',
+          });
+          failedCount++;
+          continue;
+        }
+
+        // 使用事务创建交易记录并更新状态
+        const result = await this.prisma.$transaction(async (tx) => {
+          const transaction = await tx.transaction.create({
+            data: {
+              userId,
+              categoryId: item.categoryId,
+              type: item.type,
+              amount: item.amount,
+              description: item.description,
+              transactionDate: new Date(item.date),
+              source: 'AI_EXTRACTED',
+              aiItemId: item.id,
+            },
+            include: {
+              category: true,
+            },
+          });
+
+          await tx.aiPendingItem.update({
+            where: { id: item.id },
+            data: { status: 'CONFIRMED' },
+          });
+
+          return transaction;
+        });
+
+        results.push({
+          id: item.id,
+          success: true,
+          transaction: result,
+        });
+        successCount++;
+
+        this.logger.log(
+          `Batch confirmed AI item ${item.id}, created transaction ${result.id}`,
+        );
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : '未知错误';
+        results.push({
+          id: item.id,
+          success: false,
+          error: errorMessage,
+        });
+        failedCount++;
+
+        this.logger.error(
+          `Failed to batch confirm AI item ${item.id}: ${errorMessage}`,
+        );
+      }
+    }
+
+    return {
+      successCount,
+      failedCount,
+      results,
+    };
   }
 
   /**
