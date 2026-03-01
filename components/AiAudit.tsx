@@ -14,6 +14,7 @@ const AiAudit: React.FC = () => {
   const { token } = useAuth();
   const [editingItem, setEditingItem] = useState<AiPendingItem | null>(null);
   const [confirmingItem, setConfirmingItem] = useState<AiPendingItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<AiPendingItem | null>(null);
   const [isConfirmAllModalOpen, setIsConfirmAllModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -138,6 +139,33 @@ const AiAudit: React.FC = () => {
     setEditingItem(item);
   };
 
+  const handleDeleteClick = (item: AiPendingItem) => {
+    setDeletingItem(item);
+  };
+
+  const handleRealDelete = async () => {
+    if (!deletingItem || !token) return;
+
+    setIsConfirming(true);
+    try {
+      await api.aiItems.remove(deletingItem.id, token);
+
+      // 从列表中移除已删除的项
+      setAiItems(prev => prev.filter(item => item.id !== deletingItem.id));
+      setDeletingItem(null);
+      setToastMessage('已删除该记录');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error('Failed to delete AI item:', error);
+      setToastMessage('删除失败，请重试');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   const handleSaveModal = (updatedItem: AiPendingItem) => {
     setAiItems(prev => prev.map(item =>
       item.id === updatedItem.id ? updatedItem : item
@@ -257,14 +285,21 @@ const AiAudit: React.FC = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); handleEditItem(item); }}
-                          className="p-2 text-text-sub hover:text-text-main hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors cursor-pointer" 
+                          className="p-2 text-text-sub hover:text-text-main hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors cursor-pointer"
                           title="编辑"
                         >
                           <span className="material-symbols-outlined">edit</span>
                         </button>
-                        <button 
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}
+                          className="p-2 text-text-sub hover:text-danger hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors cursor-pointer"
+                          title="删除"
+                        >
+                          <span className="material-symbols-outlined">delete</span>
+                        </button>
+                        <button
                           onClick={(e) => { e.stopPropagation(); handleConfirmItemClick(item); }}
                           className="bg-primary hover:bg-primary-hover active:bg-blue-700 text-white text-xs md:text-sm font-bold py-2 px-4 rounded-lg shadow-sm shadow-blue-200 transition-colors whitespace-nowrap cursor-pointer"
                         >
@@ -317,6 +352,20 @@ const AiAudit: React.FC = () => {
         icon="check_circle"
         iconColorClass="text-primary"
         iconBgClass="bg-blue-50"
+      />
+
+      {/* Delete Confirm Modal */}
+      <ConfirmActionModal
+        isOpen={!!deletingItem}
+        onClose={() => setDeletingItem(null)}
+        onConfirm={handleRealDelete}
+        title={t('audit.deleteTitle')}
+        message={t('audit.deleteMsg')}
+        confirmText={t('common.delete')}
+        confirmButtonClass="bg-danger text-white hover:bg-red-600"
+        icon="delete"
+        iconColorClass="text-danger"
+        iconBgClass="bg-red-50"
       />
 
       {/* Toast Notification */}

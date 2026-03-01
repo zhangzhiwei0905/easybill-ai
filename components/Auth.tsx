@@ -33,13 +33,12 @@ const Auth: React.FC = () => {
   // Countdown State
   const [countdown, setCountdown] = useState(0);
 
-  // If already authenticated, redirect to dashboard
+  // If already authenticated, redirect to dashboard (always, regardless of previous location)
   useEffect(() => {
     if (isAuthenticated) {
-      const from = (location.state as any)?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
+      navigate('/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [isAuthenticated, navigate]);
 
   // Handle Countdown Timer
   useEffect(() => {
