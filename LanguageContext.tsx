@@ -134,6 +134,8 @@ export const translations = {
       confidenceHigh: '高',
       confidenceMedium: '中',
       confidenceLow: '低',
+      deleteTitle: '删除记录',
+      deleteMsg: '您确定要删除这条记录吗？删除后将不会记入账本。',
     },
     transactions: {
       title: '账单明细',
@@ -273,6 +275,8 @@ export const translations = {
       confidenceHigh: 'High',
       confidenceMedium: 'Medium',
       confidenceLow: 'Low',
+      deleteTitle: 'Delete Record',
+      deleteMsg: 'Are you sure you want to delete this record? It will not be added to the ledger.',
     },
     transactions: {
       title: 'Transactions',
