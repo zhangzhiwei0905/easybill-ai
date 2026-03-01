@@ -139,6 +139,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
     };
   }, [token, trendPeriod, getDateRange]);
 
+  // 进入页面时刷新 AI 待审核项
+  useEffect(() => {
+    refreshAiItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleConfirmAiItem = (id: string) => {
     const item = aiItems.find(i => i.id === id);
     if (item) {
@@ -162,7 +168,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
           type: confirmingAiItem.type,
           amount: confirmingAiItem.amount,
           description: confirmingAiItem.description,
-          date: new Date(confirmingAiItem.date).toISOString().split('T')[0],
+          date: confirmingAiItem.rawDate, // 使用 ISO 8601 格式日期
           categoryId: confirmingAiItem.categoryId,
         },
         token
@@ -428,19 +434,37 @@ const SummaryCard = ({ title, amount, icon, color, bg }: any) => (
   </div>
 );
 
-const AiPendingCard = ({ item, onConfirm, onEdit, t }: { item: AiPendingItem, onConfirm: () => void, onEdit: () => void, t: any }) => (
-  <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white transition-colors group">
-    <div className="flex items-start justify-between mb-3 gap-2">
-      <div className="flex items-center gap-2 overflow-hidden">
-        <div className={`w-8 h-8 rounded-full ${item.categoryColor} flex items-center justify-center shrink-0`}>
-          <span className="material-symbols-outlined text-sm">{item.categoryIcon}</span>
+// 置信度配置
+const getConfidenceConfig = (t: any) => ({
+  HIGH: { label: t('audit.confidenceHigh'), color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+  MEDIUM: { label: t('audit.confidenceMedium'), color: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+  LOW: { label: t('audit.confidenceLow'), color: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
+});
+
+const AiPendingCard = ({ item, onConfirm, onEdit, t }: { item: AiPendingItem, onConfirm: () => void, onEdit: () => void, t: any }) => {
+  const confidenceConfig = getConfidenceConfig(t);
+  const conf = confidenceConfig[item.confidence] || confidenceConfig.MEDIUM;
+
+  return (
+    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white transition-colors group">
+      <div className="flex items-start justify-between mb-3 gap-2">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <div className={`w-8 h-8 rounded-full ${item.categoryColor} flex items-center justify-center shrink-0`}>
+            <span className="material-symbols-outlined text-sm">{item.categoryIcon}</span>
+          </div>
+          <span className="font-bold text-text-main text-sm truncate">{item.category}</span>
         </div>
-        <span className="font-bold text-text-main text-sm truncate">{item.category}</span>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* 置信度标签 */}
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${conf.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`}></span>
+            {conf.label}
+          </span>
+          <span className="text-sm font-bold text-text-main whitespace-nowrap">
+             {item.type === 'INCOME' ? '+' : '-'}¥{item.amount.toFixed(2)}
+          </span>
+        </div>
       </div>
-      <span className="text-sm font-bold text-text-main whitespace-nowrap">
-         {item.type === 'INCOME' ? '+' : '-'}¥{item.amount.toFixed(2)}
-      </span>
-    </div>
     <div className="p-3 bg-white rounded-lg mb-3 border border-dashed border-slate-200">
       <p className="text-xs text-text-sub leading-relaxed line-clamp-2">
         <span className="font-bold text-primary">{t('common.aiParsing')}:</span> 
@@ -462,6 +486,7 @@ const AiPendingCard = ({ item, onConfirm, onEdit, t }: { item: AiPendingItem, on
       </button>
     </div>
   </div>
-);
+  );
+};
 
 export default Dashboard;

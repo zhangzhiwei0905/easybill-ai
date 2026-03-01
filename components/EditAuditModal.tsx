@@ -25,20 +25,13 @@ const EditAuditModal: React.FC<EditAuditModalProps> = ({ item, onClose, onSave }
 
   // Initialize date format
   useEffect(() => {
-    // Convert "YYYY年MM月DD日" to "YYYY-MM-DD" for the input
-    const match = item.date.match(/(\d{4})年(\d{2})月(\d{2})日/);
-    if (match) {
-      setDate(`${match[1]}-${match[2]}-${match[3]}`);
+    // 直接使用 rawDate（ISO 8601 格式）
+    if (item.rawDate) {
+      setDate(item.rawDate);
     } else {
-      // If already in YYYY-MM-DD or other format, try to parse
-      const d = new Date(item.date.replace(/年|月/g, '-').replace(/日/g, ''));
-      if (!isNaN(d.getTime())) {
-          setDate(d.toISOString().split('T')[0]);
-      } else {
-          setDate(new Date().toISOString().split('T')[0]);
-      }
+      setDate(new Date().toISOString().split('T')[0]);
     }
-  }, [item.date]);
+  }, [item.rawDate]);
 
   // Load categories on mount and when tab changes
   useEffect(() => {
@@ -131,6 +124,7 @@ const EditAuditModal: React.FC<EditAuditModalProps> = ({ item, onClose, onSave }
           categoryIcon: selectedCategory?.icon || item.categoryIcon,
           categoryColor: selectedCategory?.colorClass || item.categoryColor,
           date: formattedDate,
+          rawDate: date, // 更新 rawDate
           description: description
       };
 

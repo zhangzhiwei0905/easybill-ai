@@ -70,12 +70,14 @@ export interface AiPendingItem {
   id: string;
   rawText: string;
   date: string;
+  rawDate: string; // ISO 8601 格式的原始日期，用于 API 调用
   category: string;
   categoryIcon: string;
   categoryColor: string;
   description: string;
   amount: number;
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  parseError?: string; // AI 解析失败的错误信息
   type: 'EXPENSE' | 'INCOME';
   status?: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'NEEDS_MANUAL';
   categoryId?: string;
@@ -92,6 +94,7 @@ export interface AiPendingItemApiResponse {
   description: string;
   parsedDate: string;
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  parseError?: string;
   status: 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'NEEDS_MANUAL';
   createdAt: string;
   updatedAt: string;
