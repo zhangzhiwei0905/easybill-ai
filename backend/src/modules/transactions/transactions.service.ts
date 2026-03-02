@@ -214,7 +214,17 @@ export class TransactionsService {
       t.description || '',
     ]);
 
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    // Properly escape CSV fields (handle commas, quotes, and newlines)
+    const escapeCsvField = (field: string): string => {
+      if (field.includes(',') || field.includes('"') || field.includes('\n')) {
+        return `"${field.replace(/"/g, '""')}"`;
+      }
+      return field;
+    };
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCsvField).join(','))
+      .join('\n');
     return csv;
   }
 
