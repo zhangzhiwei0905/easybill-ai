@@ -299,4 +299,88 @@ export const api = {
         getStatistics: (token: string) =>
             request<{ total: number; pending: number; confirmed: number; rejected: number; needsManual: number; dailyStats: any; categoryStats: any }>('GET', '/ai-items/statistics', undefined, token),
     },
+
+    // ── Analysis ───────────────────────────────────────────
+    analysis: {
+        getSummary: (months: number, token: string) => {
+            const query = new URLSearchParams();
+            if (months) query.append('months', months.toString());
+            return request<{
+                totalIncome: number;
+                totalExpense: number;
+                netSavings: number;
+                averageMonthlyExpense: number;
+                budgetUtilization: number;
+                months: number;
+                transactionCount: number;
+            }>(`GET`, `/analysis/summary?${query}`, undefined, token);
+        },
+
+        getTrends: (months: number, token: string) => {
+            const query = new URLSearchParams();
+            if (months) query.append('months', months.toString());
+            return request<{
+                monthly: Array<{ month: string; income: number; expense: number; net: number }>;
+                categories: Array<{
+                    category: string;
+                    amount: number;
+                    percentage: number;
+                    trend: 'up' | 'down' | 'stable';
+                    categoryId: string;
+                    icon: string;
+                    colorClass: string;
+                }>;
+            }>(`GET`, `/analysis/trends?${query}`, undefined, token);
+        },
+
+        getCategories: (months: number, token: string) => {
+            const query = new URLSearchParams();
+            if (months) query.append('months', months.toString());
+            return request<Array<{
+                categoryId: string;
+                categoryName: string;
+                icon: string;
+                colorClass: string;
+                amount: number;
+                count: number;
+                percentage: number;
+                trend: 'up' | 'down' | 'stable';
+                changeAmount: number;
+                changePercentage: number;
+            }>>(`GET`, `/analysis/categories?${query}`, undefined, token);
+        },
+
+        getPredictions: (token: string) =>
+            request<{
+                monthEndExpense: number;
+                currentExpense: number;
+                remainingBudget: number;
+                riskLevel: 'low' | 'medium' | 'high';
+                budgetUtilization: number;
+                predictedOverspend: number;
+                dailyAverage: number;
+                confidence: number;
+            }>(`GET`, '/analysis/predictions', undefined, token),
+
+        getRecommendations: (months: number, token: string) => {
+            const query = new URLSearchParams();
+            if (months) query.append('months', months.toString());
+            return request<{
+                summary: string;
+                insights: string[];
+                recommendations: Array<{
+                    category: string;
+                    suggestion: string;
+                    potentialSavings: number;
+                    priority: 'high' | 'medium' | 'low';
+                    feasibilityScore: number;
+                    difficulty: 'easy' | 'medium' | 'hard';
+                }>;
+                riskWarnings: string[];
+                nextMonthBudget: Record<string, number>;
+                overallScore: number;
+                months: number;
+            }>(`GET`, `/analysis/recommendations?${query}`, undefined, token);
+        },
+    },
 };
