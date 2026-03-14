@@ -9,6 +9,7 @@ import { UsersModule } from './modules/users/users.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { AiItemsModule } from './modules/ai-items/ai-items.module';
+import { AnalysisModule } from './modules/analysis/analysis.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -29,6 +30,7 @@ import configuration from './config/configuration';
     CategoriesModule,
     TransactionsModule,
     AiItemsModule,
+    AnalysisModule,
   ],
   controllers: [AppController],
   providers: [AppService],

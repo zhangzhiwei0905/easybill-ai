@@ -127,6 +127,94 @@ export enum NavPage {
   SETTINGS = 'settings'
 }
 
+// ── Analysis Types ───────────────────────────────────────
+export interface AnalysisQuery {
+  months?: number; // 默认3个月
+}
+
+export interface AnalysisSummary {
+  totalIncome: number;
+  totalExpense: number;
+  netSavings: number;
+  averageMonthlyExpense: number;
+  budgetUtilization: number;
+  months: number;
+  transactionCount: number;
+}
+
+export interface MonthlyTrend {
+  month: string;
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export interface CategoryTrend {
+  category: string;
+  amount: number;
+  percentage: number;
+  trend: 'up' | 'down' | 'stable';
+  categoryId: string;
+  icon: string;
+  colorClass: string;
+}
+
+export interface TrendAnalysis {
+  monthly: MonthlyTrend[];
+  categories: CategoryTrend[];
+}
+
+export interface CategoryAnalysis {
+  categoryId: string;
+  categoryName: string;
+  icon: string;
+  colorClass: string;
+  amount: number;
+  count: number;
+  percentage: number;
+  trend: 'up' | 'down' | 'stable';
+  changeAmount: number;
+  changePercentage: number;
+}
+
+export interface PredictionAnalysis {
+  monthEndExpense: number;
+  currentExpense: number;
+  remainingBudget: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  budgetUtilization: number;
+  predictedOverspend: number;
+  dailyAverage: number;
+  confidence: number;
+}
+
+export interface AiRecommendation {
+  category: string;
+  suggestion: string;
+  potentialSavings: number;
+  priority: 'high' | 'medium' | 'low';
+  feasibilityScore: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+export interface AiRecommendations {
+  summary: string;
+  insights: string[];
+  recommendations: AiRecommendation[];
+  riskWarnings: string[];
+  nextMonthBudget: Record<string, number>;
+  overallScore: number;
+  months: number;
+}
+
+export interface AnalysisData {
+  summary: AnalysisSummary;
+  trends: TrendAnalysis;
+  categories: CategoryAnalysis[];
+  predictions: PredictionAnalysis;
+  aiInsights: AiRecommendations;
+}
+
 // ── Context Types ─────────────────────────────────────────
 export interface GlobalOutletContextType {
   onOpenEntryModal: () => void;

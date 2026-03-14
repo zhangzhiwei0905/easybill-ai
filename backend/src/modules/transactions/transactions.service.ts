@@ -283,6 +283,131 @@ export class TransactionsService {
     };
   }
 
+  async getTransactionsByDateRange(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    return this.prisma.transaction.findMany({
+      where: {
+        userId,
+        transactionDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        category: true,
+      },
+      orderBy: {
+        transactionDate: 'desc',
+      },
+    });
+  }
+
+  async getCategoryExpenses(userId: string, months: number) {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+    startDate.setHours(0, 0, 0, 0);
+
+    const categoryExpenses = await this.prisma.transaction.groupBy({
+      by: ['categoryId'],
+      where: {
+        userId,
+        type: 'EXPENSE',
+        transactionDate: {
+          gte: startDate,
+        },
+      },
+      _sum: { amount: true },
+      _count: { id: true },
+      orderBy: {
+        _sum: { amount: 'desc' },
+      },
+    });
+
+    const categoryIds = categoryExpenses.map(c => c.categoryId);
+    const categories = await this.prisma.category.findMany({
+      where: {
+        id: { in: categoryIds },
+      },
+      select: {
+        id: true,
+        name: true,
+        icon: true,
+        colorClass: true,
+      },
+    });
+
+    const result = categoryExpenses.map(expense => {
+      const category = categories.find(c => c.id === expense.categoryId);
+      return {
+        categoryId: expense.categoryId,
+        categoryName: category?.name || '未知分类',
+        icon: category?.icon || '📊',
+        colorClass: category?.colorClass || 'bg-gray-100',
+        amount: Number(expense._sum.amount || 0),
+        count: expense._count.id,
+      };
+    });
+
+    return result;
+  }
+
+  async getMonthlyTrends(userId: string, months: number) {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+    startDate.setHours(0, 0, 0, 0);
+
+    const monthlyData = await this.prisma.$queryRaw`
+      SELECT 
+        DATE_TRUNC('month', "transaction_date") as month,
+        type,
+        SUM(amount) as total
+      FROM "transactions" 
+      WHERE "user_id" = ${userId}
+        AND "transaction_date" >= ${startDate}
+      GROUP BY DATE_TRUNC('month', "transaction_date"), type
+      ORDER BY month ASC
+    ` as any[];
+
+    const monthlyTrends = monthlyData.reduce((acc: any[], record: any) => {
+      const monthKey = new Date(record.month).toISOString().slice(0, 7);
+      let monthData = acc.find(m => m.month === monthKey);
+      
+      if (!monthData) {
+        monthData = { month: monthKey, income: 0, expense: 0 };
+        acc.push(monthData);
+      }
+      
+      if (record.type === 'INCOME') {
+        monthData.income = Number(record.total);
+      } else if (record.type === 'EXPENSE') {
+        monthData.expense = Math.abs(Number(record.total));
+      }
+      
+      return acc;
+    }, []);
+
+    return monthlyTrends;
+  }
+
+  async getAverageMonthlyExpenses(userId: string, months: number) {
+    const monthlyTrends = await this.getMonthlyTrends(userId, months);
+    
+    if (monthlyTrends.length === 0) {
+      return 0;
+    }
+    
+    const totalExpenses = monthlyTrends.reduce((sum, month) => sum + month.expense, 0);
+    return totalExpenses / monthlyTrends.length;
+  }
+
+  async getTopCategoriesByExpense(userId: string, months: number, limit: number = 5) {
+    const categoryExpenses = await this.getCategoryExpenses(userId, months);
+    return categoryExpenses.slice(0, limit);
+  }
+
   async getDashboardSummary(
     userId: string,
     monthStart?: string,
