@@ -1,0 +1,17 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.local
+.env.production
+*.md
+plans/
+tmp/
+data/
+backups/
+backend/node_modules
+backend/dist
+backend/.env
+backend/test/
+backend/coverage/

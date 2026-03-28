@@ -9,7 +9,10 @@ import * as dns from 'dns';
 dns.setDefaultResultOrder('ipv4first');
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor() {
     const connectionString = process.env.DATABASE_URL;
 
@@ -26,9 +29,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       database: dbUrl.pathname.slice(1),
       user: dbUrl.username,
       password: dbUrl.password,
-      ssl: process.env.NODE_ENV === 'production' ? {
-        rejectUnauthorized: false
-      } : false,
+      ssl:
+        process.env.DATABASE_SSL === 'true'
+          ? {
+              rejectUnauthorized: false,
+            }
+          : false,
       // Connection pool settings
       max: 10,
       idleTimeoutMillis: 30000,
@@ -39,7 +45,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const adapter = new PrismaPg(pool);
     super({
       adapter,
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      log:
+        process.env.NODE_ENV === 'development'
+          ? ['query', 'error', 'warn']
+          : ['error'],
     });
   }
 
