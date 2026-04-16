@@ -2,6 +2,8 @@ version: '3.8'
 
 services:
   postgres:
+    ports:
+     - "127.0.0.1:15432:5432"
     image: postgres:16-alpine
     container_name: easybill-postgres
     restart: unless-stopped
@@ -78,7 +80,7 @@ services:
     networks:
       - easybill-internal
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/api || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -118,14 +120,14 @@ services:
     container_name: easybill-frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-80}:80"
+      - "${FRONTEND_PORT:-8081}:80"
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - easybill-internal
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:80 || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:80 || exit 1']
       interval: 30s
       timeout: 5s
       retries: 3

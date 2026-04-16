@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "nest build",
-    "build:prod": "prisma generate && nest build",
+    "build:prod": "prisma generate && nest build && tsc prisma/seed.ts --outDir dist/prisma --module nodenext --moduleResolution nodenext --target ES2023 --esModuleInterop --skipLibCheck",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -22,10 +22,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "node dist/prisma/seed.js"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "node dist/prisma/seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
