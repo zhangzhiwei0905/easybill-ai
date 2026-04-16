@@ -22,6 +22,9 @@ async function request<T>(
     const json = await res.json();
 
     if (!res.ok || json.code >= 400) {
+        if (res.status === 401) {
+            window.dispatchEvent(new CustomEvent('auth:expired'));
+        }
         throw new Error(json.message || '请求失败');
     }
 

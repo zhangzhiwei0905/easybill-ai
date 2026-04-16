@@ -112,22 +112,21 @@ export class TransactionsService {
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
-    // Map sortBy to actual database field
-    const orderByField =
+    // Map sortBy to composite orderBy (add createdAt as tiebreaker)
+    const order = sortOrder as 'asc' | 'desc';
+    const orderBy =
       sortBy === 'date'
-        ? 'transactionDate'
+        ? [{ transactionDate: order }, { createdAt: order }]
         : sortBy === 'amount'
-          ? 'amount'
-          : 'createdAt';
+          ? [{ amount: order }, { createdAt: order }]
+          : [{ createdAt: order }];
 
     const [transactions, total] = await Promise.all([
       this.prisma.transaction.findMany({
         where,
         skip,
         take,
-        orderBy: {
-          [orderByField]: sortOrder,
-        },
+        orderBy,
         include: {
           category: true,
         },
@@ -253,7 +252,7 @@ export class TransactionsService {
       this.prisma.transaction.findMany({
         where,
         include: { category: true },
-        orderBy: { transactionDate: 'desc' },
+        orderBy: [{ transactionDate: 'desc' }, { createdAt: 'desc' }],
       }),
     ]);
 
@@ -299,9 +298,10 @@ export class TransactionsService {
       include: {
         category: true,
       },
-      orderBy: {
-        transactionDate: 'desc',
-      },
+      orderBy: [
+        { transactionDate: 'desc' },
+        { createdAt: 'desc' },
+      ],
     });
   }
 
@@ -454,7 +454,7 @@ export class TransactionsService {
       this.prisma.transaction.findMany({
         where: monthWhere,
         include: { category: true },
-        orderBy: { transactionDate: 'desc' },
+        orderBy: [{ transactionDate: 'desc' }, { createdAt: 'desc' }],
       }),
     ]);
 
