@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { json } from 'express';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Increase JSON body size limit for base64 avatar uploads
+  app.use(json({ limit: '10mb' }));
 
   // Enable CORS
   const allowedOrigins = [

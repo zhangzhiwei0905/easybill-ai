@@ -15,6 +15,7 @@ const Settings: React.FC = () => {
   const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
   const [webhookKey, setWebhookKey] = useState<string | null>(null);
   const [showWebhookKey, setShowWebhookKey] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -162,7 +163,10 @@ const Settings: React.FC = () => {
     const existingToken = localStorage.getItem('easybill_token') || '';
     const existingRefresh = localStorage.getItem('easybill_refresh_token') || '';
     login(updatedUser, existingToken, existingRefresh);
+    setCurrentUser(updatedUser);
     setIsEditProfileModalOpen(false);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
   };
 
   return (
@@ -416,6 +420,14 @@ const Settings: React.FC = () => {
         iconColorClass="text-amber-500"
         iconBgClass="bg-amber-50"
       />
+
+      {/* Success Toast */}
+      {showToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] bg-[#111418] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 fade-in duration-300">
+          <span className="material-symbols-outlined text-success">check_circle</span>
+          <span className="font-bold text-sm">保存成功</span>
+        </div>
+      )}
     </div>
   );
 };
