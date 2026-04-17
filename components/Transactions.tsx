@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '../AuthContext';
 import { api, Transaction, Category } from '../services/api';
@@ -17,10 +17,51 @@ const DEFAULT_FILTERS: FilterCriteria = {
   maxAmount: ''
 };
 
+const getCurrentMonthRange = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const monthIndex = now.getMonth();
+  const month = String(monthIndex + 1).padStart(2, '0');
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+
+  return {
+    startDate: `${year}-${month}-01`,
+    endDate: `${year}-${month}-${String(lastDay).padStart(2, '0')}`,
+  };
+};
+
+const getRouteDrivenDateFilters = (
+  urlStartDate: string | null,
+  urlEndDate: string | null,
+  urlCategoryId: string | null,
+) => {
+  if (urlStartDate || urlEndDate) {
+    return {
+      startDate: urlStartDate || '',
+      endDate: urlEndDate || '',
+    };
+  }
+
+  if (urlCategoryId) {
+    return {
+      startDate: '',
+      endDate: '',
+    };
+  }
+
+  return getCurrentMonthRange();
+};
+
 const Transactions: React.FC = () => {
   const { onOpenEntryModal, onTransactionSuccess } = useOutletContext<GlobalOutletContextType>();
   const { t } = useLanguage();
   const { token } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  // Read URL params for initial state
+  const urlStartDate = searchParams.get('startDate');
+  const urlEndDate = searchParams.get('endDate');
+  const urlCategoryId = searchParams.get('categoryId');
 
   // State
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -29,12 +70,9 @@ const Transactions: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Filter & Search State
-  const [currentDate, setCurrentDate] = useState(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  });
+  const initialDateFilters = getRouteDrivenDateFilters(urlStartDate, urlEndDate, urlCategoryId);
+  const [startDate, setStartDate] = useState(initialDateFilters.startDate);
+  const [endDate, setEndDate] = useState(initialDateFilters.endDate);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState(''); // For immediate input display
 
@@ -78,7 +116,7 @@ const Transactions: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'createdAt'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [headerSourceFilter, setHeaderSourceFilter] = useState<'ALL' | 'AI_EXTRACTED' | 'MANUAL'>('ALL');
-  const [headerCategoryFilter, setHeaderCategoryFilter] = useState<string>('ALL');
+  const [headerCategoryFilter, setHeaderCategoryFilter] = useState<string>(() => urlCategoryId || 'ALL');
   const [showSourceDropdown, setShowSourceDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
@@ -92,6 +130,15 @@ const Transactions: React.FC = () => {
     totalExpense: 0,
     balance: 0,
   });
+
+  useEffect(() => {
+    const nextDateFilters = getRouteDrivenDateFilters(urlStartDate, urlEndDate, urlCategoryId);
+
+    setStartDate(nextDateFilters.startDate);
+    setEndDate(nextDateFilters.endDate);
+    setHeaderCategoryFilter(urlCategoryId || 'ALL');
+    setCurrentPage(1);
+  }, [urlStartDate, urlEndDate, urlCategoryId]);
 
   const loadCategories = async () => {
     if (!token) return;
@@ -124,13 +171,9 @@ const Transactions: React.FC = () => {
         sortOrder,
       };
 
-      // Date filter (convert YYYY-MM to date range)
-      if (currentDate) {
-        const [year, month] = currentDate.split('-');
-        params.startDate = `${year}-${month}-01`;
-        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-        params.endDate = `${year}-${month}-${lastDay}`;
-      }
+      // Date filter (direct date range)
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
 
       // Search
       if (searchQuery) {
@@ -181,18 +224,13 @@ const Transactions: React.FC = () => {
   };
 
   const loadSummary = async () => {
-    if (!token || !currentDate) return;
+    if (!token) return;
 
     // Prevent concurrent calls
     if (isLoadingSummaryRef.current) return;
     isLoadingSummaryRef.current = true;
 
     try {
-      const [year, month] = currentDate.split('-');
-      const startDate = `${year}-${month}-01`;
-      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-      const endDate = `${year}-${month}-${lastDay}`;
-
       const data = await api.transactions.dashboardSummary(token, startDate, endDate);
       setSummary({
         totalIncome: data.currentMonth.totalIncome,
@@ -226,20 +264,31 @@ const Transactions: React.FC = () => {
     if (!token || !hasLoadedRef.current) return;
     loadTransactions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate, currentPage, itemsPerPage, searchQuery, filters.type, filters.source, filters.minAmount, filters.maxAmount, sortBy, sortOrder, headerSourceFilter, headerCategoryFilter]);
+  }, [startDate, endDate, currentPage, itemsPerPage, searchQuery, filters.type, filters.source, filters.minAmount, filters.maxAmount, sortBy, sortOrder, headerSourceFilter, headerCategoryFilter]);
 
   // Reload summary only when date changes
   useEffect(() => {
     if (!token || !hasLoadedRef.current) return;
     loadSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate, token]);
+  }, [startDate, endDate, token]);
 
   // Handle date changes
-  const handleDateChange = useCallback((newDate: string) => {
-    setCurrentDate(newDate);
+  const handleStartDateChange = useCallback((newDate: string) => {
+    setStartDate(newDate);
+    if (endDate && newDate > endDate) {
+      setEndDate(newDate);
+    }
     setCurrentPage(1);
-  }, []);
+  }, [endDate]);
+
+  const handleEndDateChange = useCallback((newDate: string) => {
+    setEndDate(newDate);
+    if (startDate && newDate < startDate) {
+      setStartDate(newDate);
+    }
+    setCurrentPage(1);
+  }, [startDate]);
 
   // Refresh data when transaction is added/updated/deleted
   useEffect(() => {
@@ -318,12 +367,8 @@ const Transactions: React.FC = () => {
       // Build filter params
       const params: any = {};
 
-      if (currentDate) {
-        const [year, month] = currentDate.split('-');
-        params.startDate = `${year}-${month}-01`;
-        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-        params.endDate = `${year}-${month}-${lastDay}`;
-      }
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
 
       if (searchQuery) {
         params.search = searchQuery;
@@ -339,7 +384,7 @@ const Transactions: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `EasyBill_账单明细_${currentDate}.csv`);
+      link.setAttribute('download', `EasyBill_账单明细_${startDate}_${endDate}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -443,14 +488,25 @@ const Transactions: React.FC = () => {
       {/* Filters & Search */}
       <div className="px-4 md:px-8 py-4 bg-white border-b border-slate-200 shrink-0">
         <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-          {/* Month Picker */}
-          <div className="flex-1 md:flex-none md:w-48">
-            <input
-              type="month"
-              value={currentDate}
-              onChange={(e) => handleDateChange(e.target.value)}
-              className="w-full h-11 px-4 rounded-lg border border-slate-200 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            />
+          {/* Date Range Picker */}
+          <div className="flex items-center gap-2 flex-1 md:flex-none">
+            <div className="flex-1">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => handleStartDateChange(e.target.value)}
+                className="w-full h-11 px-3 rounded-lg border border-slate-200 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+            </div>
+            <span className="text-slate-400 text-sm shrink-0">—</span>
+            <div className="flex-1">
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => handleEndDateChange(e.target.value)}
+                className="w-full h-11 px-3 rounded-lg border border-slate-200 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+            </div>
           </div>
 
           {/* Search Bar */}

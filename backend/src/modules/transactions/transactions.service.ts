@@ -11,6 +11,52 @@ import {
 } from './dto';
 import { Transaction } from '@prisma/client';
 
+/**
+ * Attempt to parse a search string as a date pattern.
+ * Returns { gte, lte } date range for Prisma filtering, or null if not a date pattern.
+ */
+function parseSearchDate(search: string): { gte: Date; lte: Date } | null {
+  // Full date: YYYY-MM-DD or YYYY/MM/DD
+  const fullDateMatch = search.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (fullDateMatch) {
+    const [, year, month, day] = fullDateMatch;
+    const y = parseInt(year);
+    const m = parseInt(month) - 1;
+    const d = parseInt(day);
+    return {
+      gte: new Date(y, m, d, 0, 0, 0),
+      lte: new Date(y, m, d, 23, 59, 59, 999),
+    };
+  }
+
+  // Year-month: YYYY-MM or YYYY/MM → match entire month
+  const yearMonthMatch = search.match(/^(\d{4})[-/](\d{1,2})$/);
+  if (yearMonthMatch) {
+    const [, year, month] = yearMonthMatch;
+    const y = parseInt(year);
+    const m = parseInt(month) - 1;
+    return {
+      gte: new Date(y, m, 1, 0, 0, 0),
+      lte: new Date(y, m + 1, 0, 23, 59, 59, 999),
+    };
+  }
+
+  // Month-day: MM-DD or M-D (assumes current year)
+  const monthDayMatch = search.match(/^(\d{1,2})[-/](\d{1,2})$/);
+  if (monthDayMatch) {
+    const [, month, day] = monthDayMatch;
+    const y = new Date().getFullYear();
+    const m = parseInt(month) - 1;
+    const d = parseInt(day);
+    return {
+      gte: new Date(y, m, d, 0, 0, 0),
+      lte: new Date(y, m, d, 23, 59, 59, 999),
+    };
+  }
+
+  return null;
+}
+
 @Injectable()
 export class TransactionsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -75,16 +121,36 @@ export class TransactionsService {
     }
 
     if (search) {
-      where.description = {
-        contains: search,
-        mode: 'insensitive',
-      };
+      const dateRange = parseSearchDate(search);
+
+      if (dateRange) {
+        // Search by date OR description when input matches a date pattern
+        where.OR = [
+          {
+            transactionDate: {
+              gte: dateRange.gte,
+              lte: dateRange.lte,
+            },
+          },
+          {
+            description: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        ];
+      } else {
+        // Normal text search on description only
+        where.description = {
+          contains: search,
+          mode: 'insensitive',
+        };
+      }
     }
 
     // Amount filter (compare absolute values)
+    // Must use AND to avoid overwriting search OR conditions
     if (minAmount !== undefined || maxAmount !== undefined) {
-      where.OR = [];
-      // For EXPENSE (negative amounts stored as positive)
       const expenseConditions: any = { type: 'EXPENSE' };
       if (minAmount !== undefined) {
         expenseConditions.amount = { gte: minAmount };
@@ -95,7 +161,6 @@ export class TransactionsService {
           lte: maxAmount,
         };
       }
-      // For INCOME (positive amounts)
       const incomeConditions: any = { type: 'INCOME' };
       if (minAmount !== undefined) {
         incomeConditions.amount = { gte: minAmount };
@@ -106,7 +171,18 @@ export class TransactionsService {
           lte: maxAmount,
         };
       }
-      where.OR.push(expenseConditions, incomeConditions);
+
+      const amountFilter = {
+        OR: [expenseConditions, incomeConditions],
+      };
+
+      if (where.OR) {
+        // Search already set OR — combine with AND
+        where.AND = [amountFilter];
+      } else {
+        // No search OR — set directly
+        where.OR = amountFilter.OR;
+      }
     }
 
     const skip = (page - 1) * pageSize;

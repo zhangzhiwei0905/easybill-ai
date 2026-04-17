@@ -37,3 +37,6 @@ tmp/
 data/
 backups/
 uploads/
+.omx/
+CLAUDE.md
+AGENTS.md

@@ -4,12 +4,11 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useLanguage } from '../LanguageContext';
 import { AiPendingItem, GlobalOutletContextType } from '../types';
-import { api, DashboardSummary } from '../services/api';
+import { api, DashboardSummary, Category } from '../services/api';
 import EditAuditModal from './EditAuditModal';
 import ConfirmRecordModal from './ConfirmRecordModal';
 
 type TrendPeriod = 'this_month' | 'last_month' | '3_months';
-
 interface DashboardProps {
   onOpenEntryModal: () => void;
 }
@@ -29,8 +28,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
   const [trendData, setTrendData] = useState<Array<{ date: string; day: string; amount: number }>>([]);
-  const [categoryData, setCategoryData] = useState<Array<{ name: string; value: number; color: string }>>([]);
+  const [categoryData, setCategoryData] = useState<Array<{ name: string; value: number; color: string; categoryId: string }>>([]);
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('this_month');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [rangeStart, setRangeStart] = useState<string | null>(null);
 
   // Prevent duplicate requests in StrictMode
   const isLoadingRef = useRef(false);
@@ -94,17 +95,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
             0
           );
 
-          const categories = Object.entries(data.currentMonth.categoryStats)
+          const catEntries = Object.entries(data.currentMonth.categoryStats)
             .map(([name, stat], idx) => ({
               name,
               value: total > 0 ? Math.round((stat.amount / total) * 100) : 0,
               color: colors[idx % colors.length],
+              categoryId: '', // will be filled after categories load
             }))
             .filter(cat => cat.value > 0)
             .sort((a, b) => b.value - a.value)
             .slice(0, 5); // Top 5 categories
 
-          setCategoryData(categories);
+          // Load categories for name→id mapping
+          const allCategories = await api.categories.findAll(token);
+          const catList = Array.isArray(allCategories) ? allCategories : [];
+          setCategories(catList);
+
+          // Map category names to IDs
+          const mappedEntries = catEntries.map(entry => {
+            const found = catList.find(c => c.name === entry.name);
+            return { ...entry, categoryId: found?.id || '' };
+          });
+
+          setCategoryData(mappedEntries);
         }
 
         // Use trend data from backend
@@ -202,6 +215,67 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
     setEditingAiItem(null);
   };
 
+  const handleTrendPointSelect = useCallback((clickedDate: string, isShiftPressed: boolean) => {
+    if (!clickedDate) return;
+
+    if (isShiftPressed) {
+      if (!rangeStart) {
+        setRangeStart(clickedDate);
+        return;
+      }
+
+      const [startDate, endDate] = [rangeStart, clickedDate].sort();
+      navigate(`/transactions?startDate=${startDate}&endDate=${endDate}`);
+      setRangeStart(null);
+      return;
+    }
+
+    setRangeStart(null);
+    navigate(`/transactions?startDate=${clickedDate}&endDate=${clickedDate}`);
+  }, [navigate, rangeStart]);
+
+  const handleTrendChartClick = useCallback((chartState: any, event?: MouseEvent | React.MouseEvent<SVGElement>) => {
+    const clickedDate = chartState?.activePayload?.[0]?.payload?.date;
+    const isShiftPressed = Boolean(event?.shiftKey || (event as any)?.nativeEvent?.shiftKey);
+
+    if (clickedDate) {
+      handleTrendPointSelect(clickedDate, isShiftPressed);
+    }
+  }, [handleTrendPointSelect]);
+
+  const renderTrendDot = useCallback((props: any, radius: number) => {
+    const { cx, cy, payload } = props;
+
+    if (typeof cx !== 'number' || typeof cy !== 'number' || !payload?.date) {
+      return null;
+    }
+
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={radius}
+        fill="#137fec"
+        stroke="#fff"
+        strokeWidth={2}
+        pointerEvents="all"
+        className="cursor-pointer"
+        onClick={(event) => {
+          event.stopPropagation();
+          handleTrendPointSelect(payload.date, event.shiftKey);
+        }}
+      />
+    );
+  }, [handleTrendPointSelect]);
+
+  const renderInactiveTrendDot = useCallback((props: any) => {
+    return renderTrendDot(props, 5);
+  }, [renderTrendDot]);
+
+  const renderActiveTrendDot = useCallback((props: any) => {
+    return renderTrendDot(props, 7);
+  }, [renderTrendDot]);
+
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth h-full bg-background-light">
       <div className="flex flex-col lg:flex-row gap-6 md:gap-8 h-full max-w-7xl mx-auto pb-4">
@@ -234,7 +308,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
           </div>
 
           {/* Trend Chart */}
-          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col min-w-0">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg text-text-main">{t('common.trend')}</h3>
               <select
@@ -247,10 +321,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
                 <option value="3_months">3 Months</option>
               </select>
             </div>
-            <div className="h-56 md:h-64 w-full">
+            {/* Range selection hint */}
+            {rangeStart && (
+              <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                <span className="material-symbols-outlined text-[16px]">info</span>
+                <span>已选择起始日期: <strong>{rangeStart}</strong>，请 Shift+点击结束日期</span>
+                <button onClick={() => setRangeStart(null)} className="ml-auto text-blue-400 hover:text-blue-600">
+                  <span className="material-symbols-outlined text-[16px]">close</span>
+                </button>
+              </div>
+            )}
+            <p className="mb-3 text-xs text-slate-500">
+              点击节点查看当天明细，按住 Shift 点击两个节点可按区间筛选明细。
+            </p>
+            <div className="h-56 md:h-64 w-full min-w-0">
               {!loading && (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendData}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={224}>
+                <AreaChart
+                  data={trendData}
+                  onClick={handleTrendChartClick}
+                >
                   <defs>
                     <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#137fec" stopOpacity={0.2}/>
@@ -268,13 +358,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
                       return label;
                     }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="amount" 
-                    stroke="#137fec" 
-                    strokeWidth={3} 
-                    fillOpacity={1} 
-                    fill="url(#colorAmount)" 
+                  <Area
+                    type="monotone"
+                    dataKey="amount"
+                    stroke="#137fec"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorAmount)"
+                    dot={renderInactiveTrendDot}
+                    activeDot={renderActiveTrendDot}
                   />
                   <XAxis 
                     dataKey="day" 
@@ -290,7 +382,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
           </div>
 
           {/* Category Chart */}
-          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col min-w-0">
             <h3 className="font-bold text-lg text-text-main mb-6">{t('common.categoryDist')}</h3>
             {loading ? (
               <div className="flex items-center justify-center h-64 text-slate-400">
@@ -302,8 +394,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
               </div>
             ) : (
               <div className="flex flex-col md:flex-row items-center justify-around gap-8">
-                <div className="w-48 h-48 relative shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="w-48 h-48 relative shrink-0 cursor-pointer min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={192}>
                     <PieChart>
                       <Pie
                         data={categoryData}
@@ -313,6 +405,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
                         dataKey="value"
                         startAngle={90}
                         endAngle={-270}
+                        onClick={(_: any, index: number) => {
+                          const cat = categoryData[index];
+                          if (cat?.categoryId) {
+                            navigate(`/transactions?categoryId=${cat.categoryId}`);
+                          }
+                        }}
                       >
                         {categoryData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
@@ -330,7 +428,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
 
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4 w-full max-w-sm">
                   {categoryData.map((cat, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-1 -mx-2 transition-colors"
+                      onClick={() => {
+                        if (cat.categoryId) {
+                          navigate(`/transactions?categoryId=${cat.categoryId}`);
+                        }
+                      }}
+                    >
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }}></div>
                       <span className="text-sm text-text-sub">{cat.name}</span>
                       <span className="text-sm font-bold ml-auto">{cat.value}%</span>
@@ -441,7 +547,7 @@ const getConfidenceConfig = (t: any) => ({
   LOW: { label: t('audit.confidenceLow'), color: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
 });
 
-const AiPendingCard = ({ item, onConfirm, onEdit, t }: { item: AiPendingItem, onConfirm: () => void, onEdit: () => void, t: any }) => {
+const AiPendingCard: React.FC<{ item: AiPendingItem; onConfirm: () => void; onEdit: () => void; t: any }> = ({ item, onConfirm, onEdit, t }) => {
   const confidenceConfig = getConfidenceConfig(t);
   const conf = confidenceConfig[item.confidence] || confidenceConfig.MEDIUM;
 
