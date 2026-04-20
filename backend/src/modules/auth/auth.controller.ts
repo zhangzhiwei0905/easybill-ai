@@ -15,6 +15,7 @@ import {
   SendCodeDto,
   ResetPasswordDto,
   RefreshTokenDto,
+  WechatMiniappLoginDto,
 } from './dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -35,6 +36,13 @@ export class AuthController {
   @ApiOperation({ summary: '用户登录' })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('wechat-miniapp/login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '微信小程序登录' })
+  async loginWithWechatMiniapp(@Body() dto: WechatMiniappLoginDto) {
+    return this.authService.loginWithWechatMiniapp(dto);
   }
 
   @Post('send-code')

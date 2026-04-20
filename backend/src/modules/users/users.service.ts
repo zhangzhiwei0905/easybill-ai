@@ -82,8 +82,11 @@ export class UsersService {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
         });
-        if (!user || !user.passwordHash) {
+        if (!user) {
             throw new NotFoundException('用户不存在');
+        }
+        if (!user.passwordHash) {
+            throw new BadRequestException('当前账号未设置密码');
         }
 
         const isOldPasswordValid = await bcrypt.compare(dto.oldPassword, user.passwordHash);

@@ -5,7 +5,7 @@ import { api } from './services/api';
 export interface User {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   avatar?: string | null;
   isPro?: boolean;
   webhookKey?: string | null;

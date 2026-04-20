@@ -42,7 +42,7 @@ async function request<T>(
 
 export interface AuthUser {
     id: string;
-    email: string;
+    email: string | null;
     name: string;
     avatar?: string | null;
     isPro?: boolean;
@@ -168,6 +168,9 @@ export const api = {
 
         login: (data: { email: string; password: string }) =>
             request<AuthResponse>('POST', '/auth/login', data),
+
+        loginWithWechatMiniapp: (data: { code: string; nickname?: string; avatarUrl?: string }) =>
+            request<AuthResponse>('POST', '/auth/wechat-miniapp/login', data),
 
         resetPassword: (data: { email: string; code: string; newPassword: string }) =>
             request<{ message: string }>('POST', '/auth/reset-password', data),

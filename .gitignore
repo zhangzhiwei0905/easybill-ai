@@ -38,5 +38,6 @@ data/
 backups/
 uploads/
 .omx/
+.codex/
 CLAUDE.md
 AGENTS.md

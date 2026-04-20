@@ -10,7 +10,23 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RegisterDto, LoginDto, SendCodeDto, ResetPasswordDto } from './dto';
+import {
+  RegisterDto,
+  LoginDto,
+  SendCodeDto,
+  ResetPasswordDto,
+  WechatMiniappLoginDto,
+} from './dto';
+
+interface WechatSessionResponse {
+  openid?: string;
+  session_key?: string;
+  unionid?: string;
+  errcode?: number;
+  errmsg?: string;
+}
+
+const WECHAT_MINIAPP_PROVIDER = 'WECHAT_MINIAPP';
 
 @Injectable()
 export class AuthService {
@@ -85,6 +101,87 @@ export class AuthService {
     );
     if (!isPasswordValid) {
       throw new UnauthorizedException('邮箱或密码错误');
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email);
+
+    return {
+      user: this.sanitizeUser(user),
+      ...tokens,
+    };
+  }
+
+  // ── WeChat Miniapp Login ─────────────────────────────
+  async loginWithWechatMiniapp(dto: WechatMiniappLoginDto) {
+    const appId = this.configService.get<string>('oauth.wechat.appId');
+    const appSecret = this.configService.get<string>('oauth.wechat.appSecret');
+
+    if (!appId || !appSecret) {
+      throw new BadRequestException('微信小程序登录未配置');
+    }
+
+    const session = await this.exchangeWechatMiniappCode(
+      dto.code,
+      appId,
+      appSecret,
+    );
+
+    if (!session.openid) {
+      throw new UnauthorizedException('微信登录失败');
+    }
+    const openid = session.openid;
+    const trimmedNickname = dto.nickname?.trim();
+
+    const existingOauthAccount = await this.prisma.oauthAccount.findUnique({
+      where: {
+        provider_providerUserId: {
+          provider: WECHAT_MINIAPP_PROVIDER,
+          providerUserId: openid,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    let user = existingOauthAccount?.user;
+
+    if (!user) {
+      user = await this.prisma.$transaction(async (tx) => {
+        const createdUser = await tx.user.create({
+          data: {
+            email: null,
+            name: this.buildWechatDisplayName(trimmedNickname, openid),
+            avatarUrl: dto.avatarUrl,
+            webhookKey: this.generateWebhookKey(),
+          },
+        });
+
+        await tx.userPreference.create({
+          data: { userId: createdUser.id },
+        });
+
+        await tx.oauthAccount.create({
+          data: {
+            userId: createdUser.id,
+            provider: WECHAT_MINIAPP_PROVIDER,
+            providerUserId: openid,
+          },
+        });
+
+        return createdUser;
+      });
+    } else if (
+      (trimmedNickname && trimmedNickname !== user.name) ||
+      (dto.avatarUrl && dto.avatarUrl !== user.avatarUrl)
+    ) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          ...(trimmedNickname ? { name: trimmedNickname } : {}),
+          ...(dto.avatarUrl ? { avatarUrl: dto.avatarUrl } : {}),
+        },
+      });
     }
 
     const tokens = await this.generateTokens(user.id, user.email);
@@ -260,7 +357,7 @@ export class AuthService {
     });
   }
 
-  private async generateTokens(userId: string, email: string) {
+  private async generateTokens(userId: string, email: string | null) {
     const payload = { sub: userId, email };
 
     const [accessToken, refreshToken] = await Promise.all([
@@ -286,5 +383,51 @@ export class AuthService {
       isPro: user.isPro,
       webhookKey: user.webhookKey,
     };
+  }
+
+  private async exchangeWechatMiniappCode(
+    code: string,
+    appId: string,
+    appSecret: string,
+  ): Promise<WechatSessionResponse> {
+    const params = new URLSearchParams({
+      appid: appId,
+      secret: appSecret,
+      js_code: code,
+      grant_type: 'authorization_code',
+    });
+
+    const response = await fetch(
+      `https://api.weixin.qq.com/sns/jscode2session?${params.toString()}`,
+      {
+        method: 'GET',
+      },
+    );
+
+    if (!response.ok) {
+      throw new UnauthorizedException('微信登录失败');
+    }
+
+    const data = (await response.json()) as WechatSessionResponse;
+
+    if (data.errcode || !data.openid) {
+      this.logger.warn(
+        `Wechat miniapp login failed: ${data.errcode ?? 'unknown'} ${data.errmsg ?? ''}`,
+      );
+      throw new UnauthorizedException(data.errmsg || '微信登录失败');
+    }
+
+    return data;
+  }
+
+  private buildWechatDisplayName(
+    nickname: string | undefined,
+    openid: string,
+  ): string {
+    if (nickname) {
+      return nickname;
+    }
+
+    return `微信用户${openid.slice(-6)}`;
   }
 }
