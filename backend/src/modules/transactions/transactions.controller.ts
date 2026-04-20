@@ -67,15 +67,18 @@ export class TransactionsController {
   @ApiOperation({ summary: '获取 Dashboard 统计摘要（全部时间 + 当月）' })
   @ApiQuery({ name: 'monthStart', required: false })
   @ApiQuery({ name: 'monthEnd', required: false })
+  @ApiQuery({ name: 'categoryId', required: false })
   async getDashboardSummary(
     @Req() req,
     @Query('monthStart') monthStart?: string,
     @Query('monthEnd') monthEnd?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
     return this.transactionsService.getDashboardSummary(
       req.user.id,
       monthStart,
       monthEnd,
+      categoryId,
     );
   }
 

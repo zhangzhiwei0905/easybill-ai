@@ -488,12 +488,19 @@ export class TransactionsService {
     userId: string,
     monthStart?: string,
     monthEnd?: string,
+    categoryId?: string,
   ) {
     // Get all-time summary
     const allTimeWhere: any = { userId };
+    if (categoryId) {
+      allTimeWhere.categoryId = categoryId;
+    }
 
     // Get current month summary
     const monthWhere: any = { userId };
+    if (categoryId) {
+      monthWhere.categoryId = categoryId;
+    }
     if (monthStart || monthEnd) {
       monthWhere.transactionDate = {};
       if (monthStart) {
@@ -569,15 +576,20 @@ export class TransactionsService {
     trendEndDate.setHours(23, 59, 59, 999);
 
     // Fetch all expenses in the date range in one query
-    const expensesInRange = await this.prisma.transaction.findMany({
-      where: {
-        userId,
-        type: 'EXPENSE',
-        transactionDate: {
-          gte: trendStartDate,
-          lte: trendEndDate,
-        },
+    const trendWhere: any = {
+      userId,
+      type: 'EXPENSE',
+      transactionDate: {
+        gte: trendStartDate,
+        lte: trendEndDate,
       },
+    };
+    if (categoryId) {
+      trendWhere.categoryId = categoryId;
+    }
+
+    const expensesInRange = await this.prisma.transaction.findMany({
+      where: trendWhere,
       select: {
         transactionDate: true,
         amount: true,

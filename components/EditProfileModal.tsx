@@ -14,6 +14,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ user, onClose, onSa
   const { token } = useAuth();
   const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState(user.avatar || '');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,14 +40,20 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ user, onClose, onSa
     setError(null);
 
     try {
-      // 调用 API 更新用户资料
-      // avatar 可以是 base64 或 URL，后端需要处理
+      let avatarUrl = avatar;
+
+      // If a new file was selected, upload to OSS first
+      if (avatarFile) {
+        const result = await api.users.uploadAvatar(avatarFile, token);
+        avatarUrl = result.avatarUrl;
+      }
+
       const updatedUser = await api.users.updateProfile(
         {
           name: name.trim(),
-          avatarUrl: avatar || undefined,
+          avatarUrl: avatarUrl || undefined,
         },
-        token
+        token,
       );
 
       onSave(updatedUser);
@@ -65,22 +72,26 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ user, onClose, onSa
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // 检查文件大小（限制为 2MB）
       if (file.size > 2 * 1024 * 1024) {
         setError('图片大小不能超过 2MB');
         return;
       }
 
+      // Store the file for upload and show preview
+      setAvatarFile(file);
+      setError(null);
+
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
           setAvatar(e.target.result as string);
-          setError(null);
         }
       };
       reader.readAsDataURL(file);
     }
   };
+
+  const isLocalImage = avatar.startsWith('data:');
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
@@ -109,11 +120,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ user, onClose, onSa
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/*"
+              accept="image/jpeg,image/png,image/gif,image/webp"
               className="hidden"
             />
           </div>
-          <p className="text-xs text-center text-text-sub">点击头像更换（支持 base64，最大 2MB）</p>
+          <p className="text-xs text-center text-text-sub">点击头像更换（支持 JPG/PNG/GIF/WebP，最大 2MB）</p>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-bold text-text-main">{t('settings.nickname')}</label>
@@ -129,19 +140,22 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ user, onClose, onSa
             <label className="text-sm font-bold text-text-main">头像 URL</label>
             <input
               type="text"
-              value={avatar.startsWith('data:') ? '(已上传本地图片)' : avatar}
+              value={isLocalImage ? (avatarFile ? '(待上传本地图片)' : '(已上传本地图片)') : avatar}
               onChange={(e) => {
-                if (!e.target.value.startsWith('(已上传')) {
+                if (!isLocalImage) {
                   setAvatar(e.target.value);
                 }
               }}
               className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 text-sm outline-none transition-all text-slate-500"
               placeholder="https://..."
-              disabled={avatar.startsWith('data:')}
+              disabled={isLocalImage}
             />
-            {avatar.startsWith('data:') && (
+            {isLocalImage && (
               <button
-                onClick={() => setAvatar('')}
+                onClick={() => {
+                  setAvatar(user.avatar || '');
+                  setAvatarFile(null);
+                }}
                 className="text-xs text-primary text-left"
               >
                 清除本地图片，改用 URL

@@ -215,31 +215,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
     setEditingAiItem(null);
   };
 
-  const handleTrendPointSelect = useCallback((clickedDate: string, isShiftPressed: boolean) => {
+  const handleTrendPointSelect = useCallback((clickedDate: string) => {
     if (!clickedDate) return;
 
-    if (isShiftPressed) {
-      if (!rangeStart) {
-        setRangeStart(clickedDate);
-        return;
-      }
-
+    if (rangeStart) {
       const [startDate, endDate] = [rangeStart, clickedDate].sort();
       navigate(`/transactions?startDate=${startDate}&endDate=${endDate}`);
       setRangeStart(null);
       return;
     }
 
-    setRangeStart(null);
-    navigate(`/transactions?startDate=${clickedDate}&endDate=${clickedDate}`);
+    // First click: set start date
+    setRangeStart(clickedDate);
   }, [navigate, rangeStart]);
 
-  const handleTrendChartClick = useCallback((chartState: any, event?: MouseEvent | React.MouseEvent<SVGElement>) => {
+  const handleTrendChartClick = useCallback((chartState: any) => {
     const clickedDate = chartState?.activePayload?.[0]?.payload?.date;
-    const isShiftPressed = Boolean(event?.shiftKey || (event as any)?.nativeEvent?.shiftKey);
 
     if (clickedDate) {
-      handleTrendPointSelect(clickedDate, isShiftPressed);
+      handleTrendPointSelect(clickedDate);
     }
   }, [handleTrendPointSelect]);
 
@@ -262,15 +256,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
         className="cursor-pointer"
         onClick={(event) => {
           event.stopPropagation();
-          handleTrendPointSelect(payload.date, event.shiftKey);
+          handleTrendPointSelect(payload.date);
         }}
       />
     );
   }, [handleTrendPointSelect]);
 
   const renderInactiveTrendDot = useCallback((props: any) => {
+    if (rangeStart && props.payload?.date === rangeStart) {
+      return renderTrendDot(props, 8);
+    }
     return renderTrendDot(props, 5);
-  }, [renderTrendDot]);
+  }, [renderTrendDot, rangeStart]);
 
   const renderActiveTrendDot = useCallback((props: any) => {
     return renderTrendDot(props, 7);
@@ -322,19 +319,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
               </select>
             </div>
             {/* Range selection hint */}
-            {rangeStart && (
-              <div className="mb-2 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-                <span className="material-symbols-outlined text-[16px]">info</span>
-                <span>已选择起始日期: <strong>{rangeStart}</strong>，请 Shift+点击结束日期</span>
-                <button onClick={() => setRangeStart(null)} className="ml-auto text-blue-400 hover:text-blue-600">
-                  <span className="material-symbols-outlined text-[16px]">close</span>
-                </button>
-              </div>
-            )}
-            <p className="mb-3 text-xs text-slate-500">
-              点击节点查看当天明细，按住 Shift 点击两个节点可按区间筛选明细。
-            </p>
-            <div className="h-56 md:h-64 w-full min-w-0">
+            <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-500">
+              <span className="material-symbols-outlined text-[14px]">info</span>
+              {rangeStart ? (
+                <>
+                  <span>已选择起始日期: <strong className="text-blue-600">{rangeStart}</strong>，请点击结束日期</span>
+                  <button onClick={() => setRangeStart(null)} className="ml-auto text-slate-400 hover:text-slate-600">
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                </>
+              ) : (
+                <span>点击节点查看当天明细，连续点击两个节点可按区间筛选明细。</span>
+              )}
+            </div>
+            <div className="h-56 md:h-64 w-full min-w-0 select-none">
               {!loading && (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={224}>
                 <AreaChart

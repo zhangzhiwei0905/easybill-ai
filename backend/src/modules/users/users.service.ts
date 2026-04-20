@@ -6,11 +6,15 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OssService } from '../../common/services/oss.service';
 import { UpdateProfileDto, UpdatePreferencesDto, ChangePasswordDto } from './dto';
 
 @Injectable()
 export class UsersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private ossService: OssService,
+    ) { }
 
     // ── Get Profile ───────────────────────────────────────
     async getProfile(userId: string) {
@@ -22,6 +26,18 @@ export class UsersService {
             throw new NotFoundException('用户不存在');
         }
         return this.formatUser(user);
+    }
+
+    // ── Upload Avatar ────────────────────────────────────
+    async uploadAvatar(userId: string, file: Express.Multer.File): Promise<string> {
+        const avatarUrl = await this.ossService.uploadAvatar(userId, file);
+
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { avatarUrl },
+        });
+
+        return avatarUrl;
     }
 
     // ── Update Profile ────────────────────────────────────

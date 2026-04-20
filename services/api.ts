@@ -198,6 +198,23 @@ export const api = {
         updateProfile: (data: { name?: string; avatarUrl?: string }, token: string) =>
             request<AuthUser>('PUT', '/users/profile', data, token),
 
+        uploadAvatar: async (file: File, token: string): Promise<{ avatarUrl: string }> => {
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            const res = await fetch(`${BASE}/users/avatar`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+
+            const json = await res.json();
+            if (!res.ok || json.code >= 400) {
+                throw new Error(json.message || '上传失败');
+            }
+            return json.data as { avatarUrl: string };
+        },
+
         getPreferences: (token: string) =>
             request<{ currency: string; language: string; theme: string }>('GET', '/users/preferences', undefined, token),
 
@@ -270,10 +287,11 @@ export const api = {
             return res.blob();
         },
 
-        dashboardSummary: (token: string, monthStart?: string, monthEnd?: string) => {
+        dashboardSummary: (token: string, monthStart?: string, monthEnd?: string, categoryId?: string) => {
             const query = new URLSearchParams();
             if (monthStart) query.append('monthStart', monthStart);
             if (monthEnd) query.append('monthEnd', monthEnd);
+            if (categoryId) query.append('categoryId', categoryId);
 
             const queryString = query.toString();
             return request<DashboardSummary>('GET', `/transactions/dashboard-summary${queryString ? '?' + queryString : ''}`, undefined, token);

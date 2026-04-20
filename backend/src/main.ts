@@ -9,8 +9,8 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Increase JSON body size limit for base64 avatar uploads
-  app.use(json({ limit: '10mb' }));
+  // JSON body size limit (avatar now uses multipart upload to OSS)
+  app.use(json({ limit: '1mb' }));
 
   // Enable CORS
   const allowedOrigins = [

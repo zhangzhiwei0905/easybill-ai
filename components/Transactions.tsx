@@ -42,13 +42,8 @@ const getRouteDrivenDateFilters = (
     };
   }
 
-  if (urlCategoryId) {
-    return {
-      startDate: '',
-      endDate: '',
-    };
-  }
-
+  // When navigating from distribution chart with only categoryId,
+  // use current month as the default date range
   return getCurrentMonthRange();
 };
 
@@ -231,7 +226,12 @@ const Transactions: React.FC = () => {
     isLoadingSummaryRef.current = true;
 
     try {
-      const data = await api.transactions.dashboardSummary(token, startDate, endDate);
+      const data = await api.transactions.dashboardSummary(
+        token,
+        startDate,
+        endDate,
+        headerCategoryFilter !== 'ALL' ? headerCategoryFilter : undefined,
+      );
       setSummary({
         totalIncome: data.currentMonth.totalIncome,
         totalExpense: data.currentMonth.totalExpense,
@@ -266,12 +266,12 @@ const Transactions: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, currentPage, itemsPerPage, searchQuery, filters.type, filters.source, filters.minAmount, filters.maxAmount, sortBy, sortOrder, headerSourceFilter, headerCategoryFilter]);
 
-  // Reload summary only when date changes
+  // Reload summary when date or category changes
   useEffect(() => {
     if (!token || !hasLoadedRef.current) return;
     loadSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, endDate, token]);
+  }, [startDate, endDate, token, headerCategoryFilter]);
 
   // Handle date changes
   const handleStartDateChange = useCallback((newDate: string) => {

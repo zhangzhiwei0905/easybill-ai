@@ -40,4 +40,11 @@ export default () => ({
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880', 10),
     uploadDir: process.env.UPLOAD_DIR || './uploads',
   },
+  oss: {
+    region: process.env.OSS_REGION,
+    accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+    accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+    bucket: process.env.OSS_BUCKET,
+    avatarPrefix: process.env.OSS_AVATAR_PREFIX || 'avatars/',
+  },
 });
