@@ -11,12 +11,14 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
 import { AiItemsModule } from './modules/ai-items/ai-items.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
 import configuration from './config/configuration';
+import { join } from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
+      envFilePath: [join(__dirname, '..', '..', '.env'), '.env'],
     }),
     ThrottlerModule.forRoot([
       {
