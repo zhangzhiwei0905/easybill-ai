@@ -18,7 +18,9 @@ COPY index.tsx ./
 COPY App.tsx ./
 COPY AuthContext.tsx ./
 COPY LanguageContext.tsx ./
+COPY ThemeContext.tsx ./
 COPY types.ts ./
+COPY index.css ./
 COPY vite.config.ts ./
 COPY vite-env.d.ts ./
 COPY tsconfig.json ./
