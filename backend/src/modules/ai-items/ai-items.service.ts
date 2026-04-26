@@ -102,11 +102,11 @@ export class AiItemsService {
 - 医疗健康：医院、药店、体检、门诊等
 - 娱乐休闲：游戏、电影、KTV、视频会员等
 - 学习教育：培训、课程、书店、网课等
-- 人情往来：红包、礼金、礼物、请客等
+- 人情往来：礼物、请客、聚餐等
 - 转账：转账、汇款、还款等（注意：转账属于支出类型）
 - 工资收入：工资、薪资、薪酬等
 - 投资收益：理财、收益、分红、利息等
-- 奖金收入：奖金、提成、绩效等
+- 红包礼金：红包、礼金、奖金、提成、绩效等
 - 兼职收入：兼职、副业、外快等
 
 ## 置信度评估规则
@@ -135,7 +135,7 @@ export class AiItemsService {
           Authorization: `Bearer ${this.deepseekApiKey}`,
         },
         body: JSON.stringify({
-          model: 'deepseek-chat',
+          model: 'deepseek-v4-flash',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },

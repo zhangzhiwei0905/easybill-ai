@@ -406,5 +406,16 @@ export const api = {
                 months: number;
             }>(`GET`, `/analysis/recommendations?${query}`, undefined, token);
         },
+
+        getCategoryTransactions: (categoryId: string, months: number, token: string) => {
+            const query = new URLSearchParams();
+            if (months) query.append('months', months.toString());
+            return request<Array<{
+                id: string;
+                amount: number;
+                description: string;
+                transactionDate: string;
+            }>>(`GET`, `/analysis/categories/${categoryId}/transactions?${query}`, undefined, token);
+        },
     },
 };

@@ -436,19 +436,19 @@ const Transactions: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-background-light">
+    <div className="flex-1 flex flex-col h-full bg-background-light dark:bg-background-dark">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-4 md:px-8 py-6 shrink-0">
+      <header className="bg-white dark:bg-surface-dark border-b border-slate-200 dark:border-border-dark px-4 md:px-8 py-6 shrink-0">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl md:text-2xl font-extrabold text-text-main tracking-tight">{t('transactions.title')}</h2>
-            <p className="text-xs md:text-sm text-text-sub mt-1">{t('transactions.subtitle')}</p>
+            <h2 className="text-xl md:text-2xl font-extrabold text-text-main dark:text-text-dark-main tracking-tight">{t('transactions.title')}</h2>
+            <p className="text-xs md:text-sm text-text-sub dark:text-text-dark-sub mt-1">{t('transactions.subtitle')}</p>
           </div>
           <div className="flex gap-2 md:gap-3">
             <button
               onClick={handleExport}
               disabled={loading || transactions.length === 0}
-              className="size-10 md:w-auto md:h-10 flex items-center justify-center gap-2 px-0 md:px-4 rounded-lg border border-slate-200 bg-white text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-all active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="size-10 md:w-auto md:h-10 flex items-center justify-center gap-2 px-0 md:px-4 rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-600 dark:text-gray-300 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-surface-dark-alt transition-all active:bg-slate-100 dark:active:bg-[#3a3f54] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[20px]">file_download</span>
               <span className="hidden md:inline">{t('common.export')}</span>
@@ -470,13 +470,13 @@ const Transactions: React.FC = () => {
             { label: t('common.totalIncome'), value: `¥${(summary.totalIncome || 0).toFixed(2)}`, color: 'success', icon: 'payments' },
             { label: t('common.balance'), value: `¥${(summary.balance || 0).toFixed(2)}`, color: (summary.balance || 0) >= 0 ? 'success' : 'danger', icon: 'account_balance_wallet' },
           ].map((stat, idx) => (
-            <div key={idx} className="bg-gradient-to-br from-white to-slate-50 rounded-xl p-4 border border-slate-100 shadow-sm">
+            <div key={idx} className="bg-gradient-to-br from-white to-slate-50 dark:from-surface-dark dark:to-surface-dark-alt rounded-xl p-4 border border-slate-100 dark:border-border-dark shadow-sm">
               <div className="flex items-center gap-3">
                 <div className={`size-10 rounded-lg bg-${stat.color}/10 flex items-center justify-center`}>
                   <span className={`material-symbols-outlined text-${stat.color} text-[20px]`}>{stat.icon}</span>
                 </div>
                 <div>
-                  <p className="text-xs text-text-sub font-medium">{stat.label}</p>
+                  <p className="text-xs text-text-sub dark:text-text-dark-sub font-medium">{stat.label}</p>
                   <p className={`text-lg font-bold text-${stat.color} tracking-tight`}>{stat.value}</p>
                 </div>
               </div>
@@ -486,7 +486,7 @@ const Transactions: React.FC = () => {
       </header>
 
       {/* Filters & Search */}
-      <div className="px-4 md:px-8 py-4 bg-white border-b border-slate-200 shrink-0">
+      <div className="px-4 md:px-8 py-4 bg-white dark:bg-surface-dark border-b border-slate-200 dark:border-border-dark shrink-0">
         <div className="flex flex-col md:flex-row gap-3 md:gap-4">
           {/* Date Range Picker */}
           <div className="flex items-center gap-2 flex-1 md:flex-none">
@@ -495,16 +495,16 @@ const Transactions: React.FC = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
-                className="w-full h-11 px-3 rounded-lg border border-slate-200 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-text-main dark:text-text-dark-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
-            <span className="text-slate-400 text-sm shrink-0">—</span>
+            <span className="text-slate-400 dark:text-gray-500 text-sm shrink-0">—</span>
             <div className="flex-1">
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => handleEndDateChange(e.target.value)}
-                className="w-full h-11 px-3 rounded-lg border border-slate-200 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-text-main dark:text-text-dark-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
           </div>
@@ -517,7 +517,7 @@ const Transactions: React.FC = () => {
               placeholder={t('common.search')}
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full h-11 pl-11 pr-4 rounded-lg border border-slate-200 text-sm font-medium text-text-main placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="w-full h-11 pl-11 pr-4 rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-text-main dark:text-text-dark-main placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
 
@@ -526,7 +526,7 @@ const Transactions: React.FC = () => {
             onClick={() => setIsFilterModalOpen(true)}
             className={`h-11 px-5 rounded-lg border text-sm font-semibold transition-all flex items-center justify-center gap-2 ${isFilterActive
               ? 'border-primary bg-primary/5 text-primary'
-              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              : 'border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-surface-dark-alt'
               }`}
           >
             <span className={`material-symbols-outlined text-[18px] ${isFilterActive ? 'filled' : ''}`}>filter_list</span>
@@ -545,14 +545,14 @@ const Transactions: React.FC = () => {
         )}
 
         {/* Table - Always show header */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+        <div className="bg-white dark:bg-surface-dark rounded-2xl shadow-sm border border-slate-200 dark:border-border-dark overflow-hidden mb-6">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
+                <tr className="bg-slate-50/50 dark:bg-surface-dark-alt border-b border-slate-100 dark:border-border-dark">
                   {/* Date - Sortable */}
                   <th
-                    className="py-4 px-6 text-[11px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-primary transition-colors"
+                    className="py-4 px-6 text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-widest cursor-pointer hover:text-primary transition-colors"
                     onClick={() => {
                       if (sortBy === 'date') {
                         setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -570,7 +570,7 @@ const Transactions: React.FC = () => {
                     </div>
                   </th>
                   {/* Category - Filterable */}
-                  <th className="py-4 px-6 text-[11px] font-bold text-slate-500 uppercase tracking-widest relative">
+                  <th className="py-4 px-6 text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-widest relative">
                     <div
                       className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
                       onClick={() => {
@@ -585,9 +585,9 @@ const Transactions: React.FC = () => {
                       </span>
                     </div>
                     {showCategoryDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto min-w-[150px]">
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto min-w-[150px]">
                         <div
-                          className={`px-4 py-2 text-sm hover:bg-slate-50 cursor-pointer ${headerCategoryFilter === 'ALL' ? 'text-primary font-medium' : 'text-slate-600'}`}
+                          className={`px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-surface-dark-alt cursor-pointer ${headerCategoryFilter === 'ALL' ? 'text-primary font-medium' : 'text-slate-600 dark:text-gray-300'}`}
                           onClick={() => { setHeaderCategoryFilter('ALL'); setShowCategoryDropdown(false); }}
                         >
                           全部分类
@@ -595,7 +595,7 @@ const Transactions: React.FC = () => {
                         {categories.map(cat => (
                           <div
                             key={cat.id}
-                            className={`px-4 py-2 text-sm hover:bg-slate-50 cursor-pointer ${headerCategoryFilter === cat.id ? 'text-primary font-medium' : 'text-slate-600'}`}
+                            className={`px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-surface-dark-alt cursor-pointer ${headerCategoryFilter === cat.id ? 'text-primary font-medium' : 'text-slate-600 dark:text-gray-300'}`}
                             onClick={() => { setHeaderCategoryFilter(cat.id); setShowCategoryDropdown(false); }}
                           >
                             {cat.name}
@@ -604,9 +604,9 @@ const Transactions: React.FC = () => {
                       </div>
                     )}
                   </th>
-                  <th className="py-4 px-6 text-[11px] font-bold text-slate-500 uppercase tracking-widest">{t('common.desc')}</th>
+                  <th className="py-4 px-6 text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-widest">{t('common.desc')}</th>
                   {/* Source - Filterable */}
-                  <th className="py-4 px-6 text-[11px] font-bold text-slate-500 uppercase tracking-widest relative">
+                  <th className="py-4 px-6 text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-widest relative">
                     <div
                       className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
                       onClick={() => {
@@ -620,11 +620,11 @@ const Transactions: React.FC = () => {
                       </span>
                     </div>
                     {showSourceDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-lg shadow-lg z-10 min-w-[120px]">
                         {['ALL', 'AI_EXTRACTED', 'MANUAL'].map(source => (
                           <div
                             key={source}
-                            className={`px-4 py-2 text-sm hover:bg-slate-50 cursor-pointer ${headerSourceFilter === source ? 'text-primary font-medium' : 'text-slate-600'}`}
+                            className={`px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-surface-dark-alt cursor-pointer ${headerSourceFilter === source ? 'text-primary font-medium' : 'text-slate-600 dark:text-gray-300'}`}
                             onClick={() => { setHeaderSourceFilter(source as any); setShowSourceDropdown(false); }}
                           >
                             {source === 'ALL' ? '全部来源' : source === 'AI_EXTRACTED' ? 'AI 提取' : '手动录入'}
@@ -653,7 +653,7 @@ const Transactions: React.FC = () => {
                       </span>
                     </div>
                   </th>
-                  <th className="py-4 px-6 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">{t('common.actions')}</th>
+                  <th className="py-4 px-6 text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-widest text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -679,21 +679,21 @@ const Transactions: React.FC = () => {
                     const isIncome = transaction.type === 'INCOME';
 
                     return (
-                      <tr key={transaction.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <tr key={transaction.id} className="border-b border-slate-100 dark:border-border-dark hover:bg-slate-50/50 dark:hover:bg-surface-dark-alt transition-colors">
                         <td className="py-4 px-6">
-                          <span className="text-sm font-medium text-text-main whitespace-nowrap">{formatDate(transaction.transactionDate)}</span>
+                          <span className="text-sm font-medium text-text-main dark:text-text-dark-main whitespace-nowrap">{formatDate(transaction.transactionDate)}</span>
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             <div className={`size-9 rounded-lg ${formatted.categoryColor} flex items-center justify-center border`}>
                               <span className="material-symbols-outlined text-[18px]">{formatted.categoryIcon}</span>
                             </div>
-                            <span className="text-sm font-semibold text-text-main">{formatted.categoryName}</span>
+                            <span className="text-sm font-semibold text-text-main dark:text-text-dark-main">{formatted.categoryName}</span>
                           </div>
                         </td>
                         <td className="py-4 px-6">
                           <div>
-                            <p className="text-sm font-medium text-text-main">{transaction.description || ''}</p>
+                            <p className="text-sm font-medium text-text-main dark:text-text-dark-main">{transaction.description || ''}</p>
                           </div>
                         </td>
                         <td className="py-4 px-6">
@@ -708,7 +708,7 @@ const Transactions: React.FC = () => {
                           </span>
                         </td>
                         <td className="py-4 px-6 text-right">
-                          <span className={`text-base font-bold ${isExpense ? 'text-danger' : isIncome ? 'text-success' : 'text-slate-600'
+                          <span className={`text-base font-bold ${isExpense ? 'text-danger' : isIncome ? 'text-success' : 'text-slate-600 dark:text-gray-300'
                             }`}>
                             {isExpense ? '-' : '+'} ¥{Math.abs(transaction.amount).toFixed(2)}
                           </span>
@@ -717,14 +717,14 @@ const Transactions: React.FC = () => {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => initiateEdit(transaction)}
-                              className="size-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+                              className="size-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-surface-dark-alt transition-colors"
                               title="编辑"
                             >
                               <span className="material-symbols-outlined text-[18px]">edit</span>
                             </button>
                             <button
                               onClick={() => initiateDelete(transaction.id)}
-                              className="size-8 flex items-center justify-center rounded-lg border border-red-200 bg-white text-danger hover:bg-red-50 transition-colors"
+                              className="size-8 flex items-center justify-center rounded-lg border border-red-200 dark:border-red-900/30 bg-white dark:bg-surface-dark text-danger hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                               title="删除"
                             >
                               <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -741,25 +741,25 @@ const Transactions: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 px-6 py-4">
+        <div className="bg-white dark:bg-surface-dark rounded-2xl shadow-sm border border-slate-200 dark:border-border-dark px-6 py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Items per page */}
             <div className="flex items-center gap-3">
-              <span className="text-sm text-text-sub font-medium">{t('common.itemsPerPage')}:</span>
+              <span className="text-sm text-text-sub dark:text-text-dark-sub font-medium">{t('common.itemsPerPage')}:</span>
               <select
                 value={itemsPerPage}
                 onChange={(e) => {
                   setItemsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="h-9 px-3 rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-sm font-medium text-text-main dark:text-text-dark-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
                 <option value={10}>10</option>
                 <option value={20}>20</option>
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="text-sm text-text-sub">
+              <span className="text-sm text-text-sub dark:text-text-dark-sub">
                 共 {totalItems} 条
               </span>
             </div>
@@ -769,21 +769,21 @@ const Transactions: React.FC = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="size-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="size-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-400 dark:text-gray-500 hover:bg-slate-50 dark:hover:bg-surface-dark-alt disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">chevron_left</span>
               </button>
 
               {getPageNumbers().map((page, idx) => (
                 page === '...' ? (
-                  <span key={`ellipsis-${idx}`} className="px-2 text-slate-400">...</span>
+                  <span key={`ellipsis-${idx}`} className="px-2 text-slate-400 dark:text-gray-500">...</span>
                 ) : (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page as number)}
                     className={`size-8 flex items-center justify-center rounded-lg text-sm font-semibold transition-colors ${currentPage === page
                       ? 'bg-primary text-white'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      : 'border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-surface-dark-alt'
                       }`}
                   >
                     {page}
@@ -794,7 +794,7 @@ const Transactions: React.FC = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="size-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="size-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark text-slate-400 dark:text-gray-500 hover:bg-slate-50 dark:hover:bg-surface-dark-alt disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">chevron_right</span>
               </button>

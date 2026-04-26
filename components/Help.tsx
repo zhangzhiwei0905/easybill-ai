@@ -142,7 +142,7 @@ const Help: React.FC = () => {
               在线
             </span>
             <span>•</span>
-            <span>更新于 2026.03</span>
+            <span>更新于 2026.04</span>
           </div>
         </div>
 
@@ -154,13 +154,14 @@ const Help: React.FC = () => {
                 ⚡
               </div>
               <div>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800">短信自动捕获 + AI 智能解析</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800">Webhook 自动记账 + 手动录入 + AI 智能解析</h2>
                 <p className="text-sm text-gray-500">核心功能</p>
               </div>
             </div>
 
             <p className="text-gray-700 leading-relaxed mb-4">
-              收到银行消费短信时，系统通过 <span className="font-semibold text-blue-600">Webhook</span> 自动捕获，
+              通过 <span className="font-semibold text-blue-600">Webhook</span> 自动捕获银行短信，
+              或使用 <span className="font-semibold text-green-600">手动录入</span> 记录消费，
               利用 <span className="font-semibold text-purple-600">DeepSeek AI</span> 智能解析：
             </p>
 
@@ -170,7 +171,7 @@ const Help: React.FC = () => {
                 { icon: '💰', label: '交易金额', desc: '精确到分' },
                 { icon: '🏪', label: '商户名称', desc: '美团、淘宝等' },
                 { icon: '📅', label: '交易日期', desc: '自动补全年份' },
-                { icon: '🏷️', label: '智能分类', desc: '14 大类' },
+                { icon: '🏷️', label: '智能分类', desc: '15 大类' },
                 { icon: '📊', label: '置信度', desc: '高/中/低' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 bg-white/70 rounded-lg">
@@ -269,7 +270,7 @@ const Help: React.FC = () => {
                     可视化展示财务状况，收支趋势一目了然
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {['收支概览', '趋势图表', '分类占比', 'TOP 排行'].map((tag, i) => (
+                    {['收支概览', '趋势图表', '分类占比', '快捷操作'].map((tag, i) => (
                       <span key={i} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">
                         {tag}
                       </span>
@@ -291,7 +292,7 @@ const Help: React.FC = () => {
                     AI 深度分析消费习惯，提供个性化建议
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {['消费洞察', '异常检测', '省钱建议', '预算预测'].map((tag, i) => (
+                    {['消费洞察', '趋势预测', '省钱建议', 'AI 推荐'].map((tag, i) => (
                       <span key={i} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">
                         {tag}
                       </span>
@@ -424,9 +425,9 @@ const Help: React.FC = () => {
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <span className="text-xl">⚡</span>
               </div>
-              <h4 className="font-semibold mb-1 text-purple-600">实时同步</h4>
+              <h4 className="font-semibold mb-1 text-purple-600">多端登录</h4>
               <p className="text-sm text-gray-600">
-                秒级解析，多设备同步
+                支持邮箱、Google、微信登录
               </p>
             </div>
 
@@ -436,7 +437,7 @@ const Help: React.FC = () => {
               </div>
               <h4 className="font-semibold mb-1 text-orange-600">智能分析</h4>
               <p className="text-sm text-gray-600">
-                趋势预测，个性化建议
+                AI 洞察，个性化建议
               </p>
             </div>
           </div>
@@ -469,7 +470,15 @@ const Help: React.FC = () => {
               },
               {
                 q: '可以手动记账吗？',
-                a: '可以！在「账单管理」点击「手动记账」添加现金交易，与 AI 记账数据统一管理分析。',
+                a: '可以！在「账单管理」点击「手动记账」添加现金交易，与 AI 记账数据统一管理分析。支持分类、备注、日期等完整信息录入。',
+              },
+              {
+                q: '支持导出数据吗？',
+                a: '支持。在「账单管理」页面点击「导出报表」按钮，可将账单导出为 CSV 文件，方便在 Excel 等工具中进一步分析。',
+              },
+              {
+                q: '支持哪些登录方式？',
+                a: '目前支持邮箱注册登录、Google 账号登录和微信登录（小程序端），数据在不同登录方式间通用。',
               },
             ].map((item, i) => (
               <details
@@ -499,7 +508,7 @@ const Help: React.FC = () => {
         <div className="text-center pt-8 border-t border-gray-200">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-600 mb-4">
             <span>💬</span>
-            <span>如有其他问题，欢迎通过「设置 → 反馈」联系我们</span>
+            <span>如有其他问题，欢迎通过帮助中心查看更多内容</span>
           </div>
           <p className="text-gray-400 text-xs">
             EasyBill AI · 让记账变得简单而智能

@@ -178,16 +178,16 @@ const AiAudit: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-background-light overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark overflow-y-auto">
       <div className="max-w-5xl mx-auto px-4 md:px-10 py-6 md:py-8 w-full">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl md:text-3xl font-black text-text-main tracking-tight">{t('audit.title')}</h1>
+              <h1 className="text-2xl md:text-3xl font-black text-text-main dark:text-text-dark-main tracking-tight">{t('audit.title')}</h1>
               <span className="px-2 py-1 bg-blue-100 text-primary text-xs font-bold rounded uppercase tracking-wider">DeepSeek Powered</span>
             </div>
-            <p className="text-text-sub text-sm md:text-base">
+            <p className="text-text-sub dark:text-text-dark-sub text-sm md:text-base">
               {t('audit.subtitle', { count: aiItems.length })}
             </p>
           </div>
@@ -195,7 +195,7 @@ const AiAudit: React.FC = () => {
             <button 
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="bg-white border border-slate-200 hover:bg-slate-50 text-text-main font-bold py-2.5 px-4 md:px-5 rounded-lg text-xs md:text-sm flex items-center gap-2 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-wait"
+              className="bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-surface-dark-alt text-text-main dark:text-text-dark-main font-bold py-2.5 px-4 md:px-5 rounded-lg text-xs md:text-sm flex items-center gap-2 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-wait"
             >
               <span className={`material-symbols-outlined text-lg ${isRefreshing ? 'animate-spin' : ''}`}>refresh</span>
               <span className="hidden md:inline">{isRefreshing ? t('common.refreshing') : t('common.refresh')}</span>
@@ -216,17 +216,17 @@ const AiAudit: React.FC = () => {
         <div className="flex flex-col gap-4 pb-20 md:pb-0">
           {aiItems.length > 0 ? (
             aiItems.map((item) => (
-              <div key={item.id} className={`bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-transparent overflow-hidden group transition-all duration-200 hover:border-blue-200 ${item.confidence === 'LOW' ? 'hover:border-yellow-200' : ''}`}>
+              <div key={item.id} className={`bg-white dark:bg-surface-dark rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-transparent overflow-hidden group transition-all duration-200 hover:border-blue-200 ${item.confidence === 'LOW' ? 'hover:border-yellow-200' : ''}`}>
                 <div className="flex flex-col lg:flex-row">
                   
                   {/* Raw SMS (Left) */}
-                  <div className="lg:w-1/3 bg-slate-50 p-4 md:p-5 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-slate-100">
+                  <div className="lg:w-1/3 bg-slate-50 dark:bg-surface-dark-alt p-4 md:p-5 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-border-dark">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="material-symbols-outlined text-text-sub text-lg">sms</span>
-                      <span className="text-xs font-bold text-text-sub uppercase tracking-wide">{t('audit.rawSms')}</span>
+                      <span className="text-xs font-bold text-text-sub dark:text-text-dark-sub uppercase tracking-wide">{t('audit.rawSms')}</span>
                     </div>
                     <div className={`relative pl-3 border-l-2 ${item.confidence === 'LOW' ? 'border-yellow-400' : 'border-primary/30'}`}>
-                      <p className="text-xs md:text-sm text-slate-600 leading-relaxed italic line-clamp-3 md:line-clamp-none">"{item.rawText}"</p>
+                      <p className="text-xs md:text-sm text-slate-600 dark:text-gray-300 leading-relaxed italic line-clamp-3 md:line-clamp-none">"{item.rawText}"</p>
                     </div>
                   </div>
 
@@ -236,18 +236,18 @@ const AiAudit: React.FC = () => {
                       
                       {/* Date */}
                       <div className="flex flex-col gap-1">
-                        <span className="text-xs text-text-sub">{t('common.date')}</span>
-                        <div className="font-medium text-text-main text-sm md:text-base">{item.date}</div>
+                        <span className="text-xs text-text-sub dark:text-text-dark-sub">{t('common.date')}</span>
+                        <div className="font-medium text-text-main dark:text-text-dark-main text-sm md:text-base">{item.date}</div>
                       </div>
 
                       {/* Category */}
                       <div className="flex flex-col gap-1">
-                        <span className="text-xs text-text-sub">{t('common.category')}</span>
+                        <span className="text-xs text-text-sub dark:text-text-dark-sub">{t('common.category')}</span>
                         <div className="flex items-center gap-2">
                           <div className={`size-6 rounded-full flex items-center justify-center ${item.categoryColor} shrink-0`}>
                             <span className="material-symbols-outlined text-sm">{item.categoryIcon}</span>
                           </div>
-                          <span className="font-medium text-text-main text-sm md:text-base truncate">{item.category}</span>
+                          <span className="font-medium text-text-main dark:text-text-dark-main text-sm md:text-base truncate">{item.category}</span>
                           {item.confidence === 'HIGH' ? (
                             <span className="hidden md:inline-flex ml-1 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">{t('audit.highConfidence')}</span>
                           ) : (
@@ -258,12 +258,12 @@ const AiAudit: React.FC = () => {
 
                       {/* Description */}
                       <div className="flex flex-col gap-1 col-span-2">
-                        <span className="text-xs text-text-sub">{t('common.desc')}</span>
+                        <span className="text-xs text-text-sub dark:text-text-dark-sub">{t('common.desc')}</span>
                         <div
                           className="flex items-center gap-2 group/edit cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={(e) => { e.stopPropagation(); handleEditItem(item); }}
                         >
-                          <span className={`font-medium text-text-main text-sm md:text-base border-b border-transparent transition-colors hover:border-slate-300 ${item.confidence === 'LOW' ? 'border-dashed border-slate-400' : ''}`}>
+                          <span className={`font-medium text-text-main dark:text-text-dark-main text-sm md:text-base border-b border-transparent transition-colors hover:border-slate-300 dark:hover:border-gray-500 ${item.confidence === 'LOW' ? 'border-dashed border-slate-400' : ''}`}>
                             {item.description}
                           </span>
                           <span className="material-symbols-outlined text-gray-300 text-sm opacity-0 group-hover/edit:opacity-100 transition-opacity">edit</span>
@@ -279,7 +279,7 @@ const AiAudit: React.FC = () => {
                     </div>
 
                     {/* Actions & Amount */}
-                    <div className="flex flex-row md:flex-col items-center md:items-end gap-4 w-full md:w-auto justify-between md:justify-center border-t md:border-t-0 border-slate-100 pt-4 md:pt-0 mt-2 md:mt-0">
+                    <div className="flex flex-row md:flex-col items-center md:items-end gap-4 w-full md:w-auto justify-between md:justify-center border-t md:border-t-0 border-slate-100 dark:border-border-dark pt-4 md:pt-0 mt-2 md:mt-0">
                       <div className="text-right">
                         <span className={`block text-xl md:text-2xl font-bold tabular-nums tracking-tight ${item.type === 'INCOME' ? 'text-success' : 'text-danger'}`}>
                           {item.type === 'INCOME' ? '+' : '-'}¥ {item.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -291,14 +291,14 @@ const AiAudit: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleEditItem(item); }}
-                          className="p-2 text-text-sub hover:text-text-main hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                          className="p-2 text-text-sub dark:text-text-dark-sub hover:text-text-main dark:hover:text-text-dark-main hover:bg-slate-100 dark:hover:bg-[#2e3244] active:bg-slate-200 dark:active:bg-[#3a3f54] rounded-lg transition-colors cursor-pointer"
                           title="编辑"
                         >
                           <span className="material-symbols-outlined">edit</span>
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}
-                          className="p-2 text-text-sub hover:text-danger hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors cursor-pointer"
+                          className="p-2 text-text-sub dark:text-text-dark-sub hover:text-danger hover:bg-red-50 dark:hover:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/30 rounded-lg transition-colors cursor-pointer"
                           title="删除"
                         >
                           <span className="material-symbols-outlined">delete</span>
@@ -318,9 +318,9 @@ const AiAudit: React.FC = () => {
             ))
           ) : (
              <div className="flex flex-col items-center justify-center py-20 opacity-50 animate-in fade-in duration-300">
-                <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">check_circle</span>
-                <p className="text-lg font-medium text-slate-500">{t('audit.allConfirmed')}</p>
-                <p className="text-xs text-slate-400 mt-2">{t('audit.refreshHint')}</p>
+                <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-gray-600 mb-4">check_circle</span>
+                <p className="text-lg font-medium text-slate-500 dark:text-gray-400">{t('audit.allConfirmed')}</p>
+                <p className="text-xs text-slate-400 dark:text-gray-500 mt-2">{t('audit.refreshHint')}</p>
              </div>
           )}
         </div>

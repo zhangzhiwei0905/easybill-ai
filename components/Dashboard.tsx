@@ -274,7 +274,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
   }, [renderTrendDot]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth h-full bg-background-light">
+    <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth h-full bg-background-light dark:bg-background-dark">
       <div className="flex flex-col lg:flex-row gap-6 md:gap-8 h-full max-w-7xl mx-auto pb-4">
         
         {/* Left Main Content */}
@@ -283,8 +283,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
           {/* Header */}
           <div className="flex flex-row items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl md:text-2xl font-extrabold text-text-main">{t('common.welcome')}, {user?.name}</h2>
-              <p className="text-xs md:text-sm text-text-sub mt-1">{t('common.overview')}</p>
+              <h2 className="text-xl md:text-2xl font-extrabold text-text-main dark:text-text-dark-main">{t('common.welcome')}, {user?.name}</h2>
+              <p className="text-xs md:text-sm text-text-sub dark:text-text-dark-sub mt-1">{t('common.overview')}</p>
             </div>
             <button 
               onClick={onOpenEntryModal}
@@ -305,13 +305,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
           </div>
 
           {/* Trend Chart */}
-          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col min-w-0">
+          <div className="bg-white dark:bg-surface-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-border-dark flex flex-col min-w-0">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-lg text-text-main">{t('common.trend')}</h3>
+              <h3 className="font-bold text-lg text-text-main dark:text-text-dark-main">{t('common.trend')}</h3>
               <select
                 value={trendPeriod}
                 onChange={(e) => setTrendPeriod(e.target.value as TrendPeriod)}
-                className="bg-transparent text-sm font-medium text-text-sub border-none focus:ring-0 cursor-pointer hover:text-primary outline-none"
+                className="bg-transparent text-sm font-medium text-text-sub dark:text-text-dark-sub border-none focus:ring-0 cursor-pointer hover:text-primary outline-none"
               >
                 <option value="this_month">This Month</option>
                 <option value="last_month">Last Month</option>
@@ -319,12 +319,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
               </select>
             </div>
             {/* Range selection hint */}
-            <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-500">
+            <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-surface-dark-alt border border-slate-200 dark:border-border-dark rounded-lg text-xs text-slate-500 dark:text-gray-400">
               <span className="material-symbols-outlined text-[14px]">info</span>
               {rangeStart ? (
                 <>
                   <span>已选择起始日期: <strong className="text-blue-600">{rangeStart}</strong>，请点击结束日期</span>
-                  <button onClick={() => setRangeStart(null)} className="ml-auto text-slate-400 hover:text-slate-600">
+                  <button onClick={() => setRangeStart(null)} className="ml-auto text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300">
                     <span className="material-symbols-outlined text-[14px]">close</span>
                   </button>
                 </>
@@ -380,8 +380,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
           </div>
 
           {/* Category Chart */}
-          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col min-w-0">
-            <h3 className="font-bold text-lg text-text-main mb-6">{t('common.categoryDist')}</h3>
+          <div className="bg-white dark:bg-surface-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-border-dark flex flex-col min-w-0">
+            <h3 className="font-bold text-lg text-text-main dark:text-text-dark-main mb-6">{t('common.categoryDist')}</h3>
             {loading ? (
               <div className="flex items-center justify-center h-64 text-slate-400">
                 <span>加载中...</span>
@@ -449,11 +449,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
 
         {/* Right Sidebar - AI Insights */}
         <aside className="w-full lg:w-96 shrink-0">
-          <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+          <div className="bg-white dark:bg-surface-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-border-dark flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">auto_awesome</span>
-                <h3 className="font-bold text-lg text-text-main">{t('common.aiInsight')}</h3>
+                <h3 className="font-bold text-lg text-text-main dark:text-text-dark-main">{t('common.aiInsight')}</h3>
               </div>
               <span className="bg-primary/10 text-primary text-[11px] px-2 py-1 rounded font-bold">{aiItems.length} {t('common.pendingConfirm')}</span>
             </div>
@@ -481,10 +481,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
             </div>
 
             {/* 查看全部按钮 */}
-            <div className="mt-3 pt-3 border-t border-slate-100">
+            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-border-dark">
               <button
                 onClick={() => navigate('/ai-audit')}
-                className="text-xs text-text-sub hover:text-primary font-medium flex items-center justify-center gap-1 w-full transition-colors py-2 hover:bg-slate-50 rounded-lg"
+                className="text-xs text-text-sub dark:text-text-dark-sub hover:text-primary font-medium flex items-center justify-center gap-1 w-full transition-colors py-2 hover:bg-slate-50 dark:hover:bg-surface-dark-alt rounded-lg"
               >
                 <span>{t('common.checkAll')}</span>
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -525,15 +525,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onOpenEntryModal }) => {
 };
 
 const SummaryCard = ({ title, amount, icon, color, bg }: any) => (
-  <div className="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between group hover:shadow-md transition-shadow">
+  <div className="bg-white dark:bg-surface-dark p-4 md:p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-border-dark flex flex-col justify-between group hover:shadow-md transition-shadow">
     <div className="flex justify-between items-start mb-3 md:mb-4">
-      <div className={`p-2 ${bg} rounded-lg ${color}`}>
+      <div className={`p-2 ${bg} dark:bg-opacity-20 rounded-lg ${color}`}>
         <span className="material-symbols-outlined text-[20px] md:text-[24px]">{icon}</span>
       </div>
     </div>
     <div>
-      <p className="text-text-sub text-[10px] md:text-xs font-medium mb-1">{title}</p>
-      <h3 className="text-lg md:text-xl font-extrabold text-text-main tracking-tight truncate" title={amount}>{amount}</h3>
+      <p className="text-text-sub dark:text-text-dark-sub text-[10px] md:text-xs font-medium mb-1">{title}</p>
+      <h3 className="text-lg md:text-xl font-extrabold text-text-main dark:text-text-dark-main tracking-tight truncate" title={amount}>{amount}</h3>
     </div>
   </div>
 );
@@ -550,13 +550,13 @@ const AiPendingCard: React.FC<{ item: AiPendingItem; onConfirm: () => void; onEd
   const conf = confidenceConfig[item.confidence] || confidenceConfig.MEDIUM;
 
   return (
-    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white transition-colors group">
+    <div className="p-4 rounded-xl border border-slate-100 dark:border-border-dark bg-slate-50/50 dark:bg-surface-dark-alt hover:bg-white dark:hover:bg-surface-dark transition-colors group">
       <div className="flex items-start justify-between mb-3 gap-2">
         <div className="flex items-center gap-2 overflow-hidden">
           <div className={`w-8 h-8 rounded-full ${item.categoryColor} flex items-center justify-center shrink-0`}>
             <span className="material-symbols-outlined text-sm">{item.categoryIcon}</span>
           </div>
-          <span className="font-bold text-text-main text-sm truncate">{item.category}</span>
+          <span className="font-bold text-text-main dark:text-text-dark-main text-sm truncate">{item.category}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {/* 置信度标签 */}
@@ -564,27 +564,27 @@ const AiPendingCard: React.FC<{ item: AiPendingItem; onConfirm: () => void; onEd
             <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`}></span>
             {conf.label}
           </span>
-          <span className="text-sm font-bold text-text-main whitespace-nowrap">
+          <span className="text-sm font-bold text-text-main dark:text-text-dark-main whitespace-nowrap">
              {item.type === 'INCOME' ? '+' : '-'}¥{item.amount.toFixed(2)}
           </span>
         </div>
       </div>
-    <div className="p-3 bg-white rounded-lg mb-3 border border-dashed border-slate-200">
-      <p className="text-xs text-text-sub leading-relaxed line-clamp-2">
-        <span className="font-bold text-primary">{t('common.aiParsing')}:</span> 
+    <div className="p-3 bg-white dark:bg-surface-dark rounded-lg mb-3 border border-dashed border-slate-200 dark:border-border-dark">
+      <p className="text-xs text-text-sub dark:text-text-dark-sub leading-relaxed line-clamp-2">
+        <span className="font-bold text-primary">{t('common.aiParsing')}:</span>
         <span dangerouslySetInnerHTML={{ __html: ` "${item.rawText}"` }} />
       </p>
     </div>
     <div className="flex gap-2 opacity-100 transition-opacity">
-      <button 
+      <button
         onClick={(e) => { e.stopPropagation(); onConfirm(); }}
         className="flex-1 bg-primary hover:bg-primary-hover active:bg-primary-hover text-white text-xs font-bold py-2 rounded-lg transition-colors shadow-sm"
       >
         {t('common.confirmRecord')}
       </button>
-      <button 
+      <button
         onClick={(e) => { e.stopPropagation(); onEdit(); }}
-        className="px-3 py-2 text-text-sub hover:text-text-main bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center justify-center cursor-pointer active:bg-slate-300"
+        className="px-3 py-2 text-text-sub dark:text-text-dark-sub hover:text-text-main dark:hover:text-text-dark-main bg-slate-100 dark:bg-[#2e3244] hover:bg-slate-200 dark:hover:bg-[#3a3f54] rounded-lg transition-colors flex items-center justify-center cursor-pointer active:bg-slate-300"
       >
         <span className="material-symbols-outlined text-sm">edit</span>
       </button>

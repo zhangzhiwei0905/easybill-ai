@@ -142,7 +142,7 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-white md:bg-background-light">
+    <div className="min-h-screen w-full flex bg-white md:bg-background-light dark:bg-surface-dark md:dark:bg-background-dark">
 
       {/* Left Side - Brand / Image (Hidden on Mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-[#0B1120] overflow-hidden items-center justify-center">
@@ -180,7 +180,7 @@ const Auth: React.FC = () => {
 
       {/* Right Side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-[420px] bg-white md:p-10 md:rounded-3xl md:shadow-xl md:border md:border-slate-100 transition-all duration-300">
+        <div className="w-full max-w-[420px] bg-white md:p-10 md:rounded-3xl md:shadow-xl md:border md:border-slate-100 dark:bg-surface-dark md:dark:border-border-dark transition-all duration-300">
 
           {/* Mobile Header Logo */}
           <div className="lg:hidden flex justify-center mb-8">
@@ -188,15 +188,15 @@ const Auth: React.FC = () => {
               <div className="bg-primary text-white p-1.5 rounded-lg">
                 <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
               </div>
-              <span className="text-xl font-extrabold text-text-main">{t('common.appName')}</span>
+              <span className="text-xl font-extrabold text-text-main dark:text-text-dark-main">{t('common.appName')}</span>
             </div>
           </div>
 
           <div className="mb-8 text-center md:text-left">
-            <h2 className="text-2xl md:text-3xl font-extrabold text-text-main mb-2">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-text-main dark:text-text-dark-main mb-2">
               {getTitle()}
             </h2>
-            <p className="text-text-sub text-sm">
+            <p className="text-text-sub dark:text-text-dark-sub text-sm">
               {getSubtitle()}
             </p>
           </div>
@@ -204,8 +204,8 @@ const Auth: React.FC = () => {
           {/* Feedback Message */}
           {feedback && (
             <div className={`mb-6 p-3 rounded-xl text-sm font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${feedback.type === 'error'
-              ? 'bg-red-50 text-danger border border-red-100'
-              : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+              ? 'bg-red-50 dark:bg-red-900/20 text-danger border border-red-100 dark:border-red-900/30'
+              : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30'
               }`}>
               <span className="material-symbols-outlined text-[20px]">
                 {feedback.type === 'error' ? 'error' : 'check_circle'}
@@ -218,14 +218,14 @@ const Auth: React.FC = () => {
             {/* Name Field - Only for Register */}
             {view === 'REGISTER' && (
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-text-main ml-1">{t('common.name')}</label>
+                <label className="text-xs font-bold text-text-main dark:text-text-dark-main ml-1">{t('common.name')}</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">person</span>
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 text-[20px]">person</span>
                   <input
                     type="text"
                     required
                     placeholder="User"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-background-light focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm transition-all outline-none font-medium"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-border-dark bg-background-light dark:bg-surface-dark-alt focus:bg-white dark:focus:bg-surface-dark focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm transition-all outline-none font-medium"
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
@@ -235,14 +235,14 @@ const Auth: React.FC = () => {
 
             {/* Email Field - All Views */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-text-main ml-1">{t('common.email')}</label>
+              <label className="text-xs font-bold text-text-main dark:text-text-dark-main ml-1">{t('common.email')}</label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">mail</span>
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 text-[20px]">mail</span>
                 <input
                   type="email"
                   required
                   placeholder="name@example.com"
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-background-light focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm transition-all outline-none font-medium"
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-border-dark bg-background-light dark:bg-surface-dark-alt focus:bg-white dark:focus:bg-surface-dark focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm transition-all outline-none font-medium"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
                 />
@@ -252,15 +252,15 @@ const Auth: React.FC = () => {
             {/* Verification Code Field - Register & Forgot Password */}
             {view !== 'LOGIN' && (
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-text-main ml-1">{t('common.verifyCode')}</label>
+                <label className="text-xs font-bold text-text-main dark:text-text-dark-main ml-1">{t('common.verifyCode')}</label>
                 <div className="relative flex gap-2">
                   <div className="relative flex-1">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">vpn_key</span>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 text-[20px]">vpn_key</span>
                     <input
                       type="text"
                       required
                       placeholder="8888"
-                      className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-background-light focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm transition-all outline-none font-medium"
+                      className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 dark:border-border-dark bg-background-light dark:bg-surface-dark-alt focus:bg-white dark:focus:bg-surface-dark focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm transition-all outline-none font-medium"
                       value={formData.code}
                       onChange={e => setFormData({ ...formData, code: e.target.value })}
                       maxLength={6}
@@ -281,7 +281,7 @@ const Auth: React.FC = () => {
             {/* Password Field - All Views */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-text-main ml-1">
+                <label className="text-xs font-bold text-text-main dark:text-text-dark-main ml-1">
                   {view === 'FORGOT' ? t('common.newPassword') : t('common.password')}
                 </label>
                 {view === 'LOGIN' && (
@@ -295,19 +295,19 @@ const Auth: React.FC = () => {
                 )}
               </div>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">lock</span>
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 text-[20px]">lock</span>
                 <input
                   type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
-                  className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 bg-background-light focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm transition-all outline-none font-medium"
+                  className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 dark:border-border-dark bg-background-light dark:bg-surface-dark-alt focus:bg-white dark:focus:bg-surface-dark focus:border-primary focus:ring-4 focus:ring-primary/10 text-sm transition-all outline-none font-medium"
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-text-main"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 hover:text-text-main dark:hover:text-text-dark-main"
                 >
                   <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
                 </button>
@@ -327,18 +327,18 @@ const Auth: React.FC = () => {
           {/* Social Auth - Only Login and Register */}
           {view !== 'FORGOT' && (
             <div className="mt-8">
-              <div className="relative flex justify-center text-xs text-slate-400 mb-5">
-                <span className="bg-white md:bg-white px-2 z-10 relative">{t('common.or')}</span>
-                <div className="absolute inset-x-0 top-1/2 h-px bg-slate-100 -z-0"></div>
+              <div className="relative flex justify-center text-xs text-slate-400 dark:text-gray-500 mb-5">
+                <span className="bg-white dark:bg-surface-dark md:bg-white px-2 z-10 relative">{t('common.or')}</span>
+                <div className="absolute inset-x-0 top-1/2 h-px bg-slate-100 dark:bg-border-dark -z-0"></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <button className="h-10 border border-slate-200 rounded-lg flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
+                <button className="h-10 border border-slate-200 dark:border-border-dark rounded-lg flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-surface-dark-alt transition-colors">
                   <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-                  <span className="text-sm font-bold text-text-main">{t('common.google')}</span>
+                  <span className="text-sm font-bold text-text-main dark:text-text-dark-main">{t('common.google')}</span>
                 </button>
-                <button className="h-10 border border-slate-200 rounded-lg flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
+                <button className="h-10 border border-slate-200 dark:border-border-dark rounded-lg flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-surface-dark-alt transition-colors">
                   <span className="material-symbols-outlined text-green-600 text-[22px]">chat</span>
-                  <span className="text-sm font-bold text-text-main">{t('common.wechat')}</span>
+                  <span className="text-sm font-bold text-text-main dark:text-text-dark-main">{t('common.wechat')}</span>
                 </button>
               </div>
             </div>
@@ -346,7 +346,7 @@ const Auth: React.FC = () => {
 
           {/* Toggle Login/Register or Back to Login */}
           <div className="mt-8 text-center">
-            <p className="text-sm text-text-sub font-medium">
+            <p className="text-sm text-text-sub dark:text-text-dark-sub font-medium">
               {view === 'FORGOT' ? (
                 <button
                   onClick={() => switchView('LOGIN')}

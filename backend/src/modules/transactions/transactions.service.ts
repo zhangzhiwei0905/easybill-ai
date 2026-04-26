@@ -381,20 +381,36 @@ export class TransactionsService {
     });
   }
 
-  async getCategoryExpenses(userId: string, months: number) {
+  async getCategoryExpenses(userId: string, months: number, previousPeriod = false) {
+    const endDate = new Date();
     const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - months);
+
+    if (previousPeriod) {
+      // 上一周期：往前多推 months 个月，取该时间段的数据
+      startDate.setMonth(startDate.getMonth() - months * 2);
+    } else {
+      startDate.setMonth(startDate.getMonth() - months);
+    }
     startDate.setHours(0, 0, 0, 0);
+
+    const where: any = {
+      userId,
+      type: 'EXPENSE',
+      transactionDate: {
+        gte: startDate,
+      },
+    };
+
+    if (previousPeriod) {
+      // 上一周期需要有结束边界
+      endDate.setMonth(endDate.getMonth() - months);
+      endDate.setHours(23, 59, 59, 999);
+      where.transactionDate.lte = endDate;
+    }
 
     const categoryExpenses = await this.prisma.transaction.groupBy({
       by: ['categoryId'],
-      where: {
-        userId,
-        type: 'EXPENSE',
-        transactionDate: {
-          gte: startDate,
-        },
-      },
+      where,
       _sum: { amount: true },
       _count: { id: true },
       orderBy: {
@@ -428,6 +444,32 @@ export class TransactionsService {
     });
 
     return result;
+  }
+
+  async getCategoryTransactions(userId: string, categoryId: string, months: number) {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+    startDate.setHours(0, 0, 0, 0);
+
+    const transactions = await this.prisma.transaction.findMany({
+      where: {
+        userId,
+        categoryId,
+        type: 'EXPENSE',
+        transactionDate: {
+          gte: startDate,
+        },
+      },
+      orderBy: { transactionDate: 'desc' },
+      take: 50,
+    });
+
+    return transactions.map(t => ({
+      id: t.id,
+      amount: Number(t.amount),
+      description: t.description || '-',
+      transactionDate: t.transactionDate.toISOString().slice(0, 10),
+    }));
   }
 
   async getMonthlyTrends(userId: string, months: number) {

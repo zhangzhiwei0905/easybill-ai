@@ -22,14 +22,14 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
 
   return (
     <div className="flex justify-between items-center">
-      <h1 className="text-2xl font-bold text-text-main">AI 消费深度分析</h1>
+      <h1 className="text-2xl font-bold text-text-main dark:text-text-dark-main">AI 消费深度分析</h1>
       
       <div className="flex items-center gap-4">
         <select
           value={selectedMonths}
           onChange={(e) => onMonthsChange(Number(e.target.value))}
           disabled={loading}
-          className="bg-background-light border border-slate-200 text-sm font-medium rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer disabled:opacity-50"
+          className="bg-background-light dark:bg-background-dark border border-slate-200 dark:border-border-dark text-sm font-medium text-text-main dark:text-text-dark-main rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer disabled:opacity-50"
         >
           {TIME_RANGE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -38,7 +38,7 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
           ))}
         </select>
         
-        <div className="flex gap-2 text-sm text-text-sub">
+        <div className="flex gap-2 text-sm text-text-sub dark:text-text-dark-sub">
           <span>数据更新于：刚刚</span>
           <button
             onClick={onRefresh}

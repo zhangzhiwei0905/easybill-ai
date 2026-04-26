@@ -25,9 +25,9 @@ const AiAnalysis: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background-light">
+    <div className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
       <div className="max-w-[1200px] mx-auto p-8 flex flex-col gap-6">
-        
+
         {/* Header */}
         <AnalysisHeader
           selectedMonths={selectedMonths}
@@ -38,24 +38,24 @@ const AiAnalysis: React.FC = () => {
 
         {/* AI Insight Hero Card */}
         {analysisData.aiInsights.summary && (
-          <div className="bg-white rounded-xl p-6 border-l-4 border-primary shadow-sm flex items-start gap-4 relative overflow-hidden">
+          <div className="bg-white dark:bg-surface-dark rounded-xl p-6 border-l-4 border-primary shadow-sm flex items-start gap-4 relative overflow-hidden">
             <div className="absolute right-0 top-0 opacity-5 pointer-events-none">
               <span className="material-symbols-outlined text-[180px]">psychology</span>
             </div>
-            <div className="bg-primary/10 p-3 rounded-full shrink-0 text-primary">
+            <div className="bg-primary/10 dark:bg-primary/20 p-3 rounded-full shrink-0 text-primary">
               <span className="material-symbols-outlined text-[28px]">auto_awesome</span>
             </div>
             <div className="flex flex-col gap-2 relative z-10">
-              <h3 className="text-base font-bold text-text-main">AI 智能洞察</h3>
-              <p className="text-text-main leading-relaxed max-w-4xl">
+              <h3 className="text-base font-bold text-text-main dark:text-text-dark-main">AI 智能洞察</h3>
+              <p className="text-text-main dark:text-text-dark-main leading-relaxed max-w-4xl">
                 {analysisData.aiInsights.summary}
               </p>
               {analysisData.aiInsights.insights.length > 0 && (
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {analysisData.aiInsights.insights.slice(0, 3).map((insight, i) => (
-                    <span 
+                    <span
                       key={i}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 text-xs font-medium text-slate-600"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-[#2e3244] text-xs font-medium text-slate-600 dark:text-gray-300"
                     >
                       <span className="material-symbols-outlined text-[14px]">lightbulb</span>
                       {insight.slice(0, 20)}...

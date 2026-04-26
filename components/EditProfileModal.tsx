@@ -95,11 +95,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ user, onClose, onSa
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200 flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-sm bg-white dark:bg-surface-dark rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200 flex flex-col" onClick={e => e.stopPropagation()}>
 
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold text-text-main">{t('settings.editProfileTitle')}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-text-main transition-colors">
+          <h3 className="text-lg font-bold text-text-main dark:text-text-dark-main">{t('settings.editProfileTitle')}</h3>
+          <button onClick={onClose} className="text-slate-400 dark:text-gray-500 hover:text-text-main dark:hover:text-text-dark-main transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>

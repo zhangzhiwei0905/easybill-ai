@@ -9,17 +9,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
               primary: "#137fec",
               "primary-hover": "#0b63b8",
               "background-light": "#f6f7f8",
+              "background-dark": "#0f1117",
+              "surface-dark": "#1a1d27",
+              "surface-dark-alt": "#252836",
+              "border-dark": "#2e3244",
               success: "#10b981",
               warning: "#f59e0b",
               danger: "#ef4444",
               "text-main": "#111418",
               "text-sub": "#617589",
+              "text-dark-main": "#e4e6eb",
+              "text-dark-sub": "#8b8fa3",
             },
             fontFamily: {
               sans: ['Manrope', 'Noto Sans SC', 'sans-serif'],
@@ -27,6 +34,14 @@
           },
         },
       }
+    </script>
+    <script>
+      // Prevent dark mode flash: apply theme before React mounts
+      (function() {
+        var theme = localStorage.getItem('easybill_theme') || 'system';
+        var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) document.documentElement.classList.add('dark');
+      })();
     </script>
     <style>
       .material-symbols-outlined {
@@ -61,7 +76,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-background-light text-text-main h-screen overflow-hidden">
+  <body class="bg-background-light dark:bg-background-dark text-text-main dark:text-text-dark-main h-screen overflow-hidden transition-colors">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

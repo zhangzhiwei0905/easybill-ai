@@ -2,16 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, User } from '../AuthContext';
 import { useLanguage } from '../LanguageContext';
+import { useTheme } from '../ThemeContext';
 import { api } from '../services/api';
 import ConfirmActionModal from './ConfirmActionModal';
 import EditProfileModal from './EditProfileModal';
+import ChangePasswordModal from './ChangePasswordModal';
 
 const Settings: React.FC = () => {
   const { user, logout, login, token } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
   const [webhookKey, setWebhookKey] = useState<string | null>(null);
   const [showWebhookKey, setShowWebhookKey] = useState(false);
@@ -26,6 +30,7 @@ const Settings: React.FC = () => {
     if (token) {
       loadUserProfile();
       loadWebhookKey();
+      loadPreferences();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -57,6 +62,22 @@ const Settings: React.FC = () => {
     }
   };
 
+  const loadPreferences = async () => {
+    try {
+      const prefs = await api.users.getPreferences(token!);
+      if (prefs.autoConfirmThreshold) {
+        setAutoConfirmThreshold(prefs.autoConfirmThreshold);
+      }
+      if (prefs.language) {
+        setLanguage(prefs.language as 'zh' | 'en');
+      }
+      // Theme is managed locally via ThemeContext/localStorage, not loaded from backend
+      // to prevent overriding user's current theme when navigating to Settings
+    } catch (error) {
+      console.error('Failed to load preferences:', error);
+    }
+  };
+
   const handleCopyWebhookKey = async () => {
     if (webhookKey) {
       await navigator.clipboard.writeText(webhookKey);
@@ -82,34 +103,30 @@ const Settings: React.FC = () => {
       setIsRegenerateModalOpen(false);
     } catch (error) {
       console.error('Failed to regenerate webhook key:', error);
-      alert('重新生成失败，请稍后重试');
+      alert(t('settings.regenerateFail'));
     } finally {
       setIsLoading(false);
     }
   };
 
   // Settings State
-  const [currency, setCurrency] = useState('CNY');
   const [autoConfirmThreshold, setAutoConfirmThreshold] = useState('HIGH_ONLY');
-  const [activeSheet, setActiveSheet] = useState<'CURRENCY' | 'LANGUAGE' | 'AUTO_CONFIRM' | null>(null);
+  const [activeSheet, setActiveSheet] = useState<'LANGUAGE' | 'AUTO_CONFIRM' | 'THEME' | null>(null);
 
   const menuGroups = [
     {
       title: t('settings.accountGroup'),
       items: [
-        { icon: 'lock', label: t('settings.security'), value: t('settings.protected') },
-        { icon: 'badge', label: t('settings.membership'), value: user?.isPro ? t('nav.pro') : 'Free' },
+        { icon: 'lock', label: t('settings.security'), value: '', onClick: () => setIsChangePasswordModalOpen(true) },
       ]
     },
     {
       title: t('settings.generalGroup'),
       items: [
-        { icon: 'notifications', label: t('settings.notifications'), value: t('settings.enabled') },
         {
           icon: 'paid',
           label: t('settings.currency'),
-          value: currency === 'CNY' ? 'CNY (¥)' : 'USD ($)',
-          onClick: () => setActiveSheet('CURRENCY')
+          value: 'CNY (¥)',
         },
         {
           icon: 'language',
@@ -117,16 +134,16 @@ const Settings: React.FC = () => {
           value: language === 'zh' ? '简体中文' : 'English',
           onClick: () => setActiveSheet('LANGUAGE')
         },
-        { icon: 'palette', label: t('settings.theme'), value: t('settings.default') },
+        { icon: 'palette', label: t('settings.theme'), value: theme === 'light' ? t('settings.themeLight') : theme === 'dark' ? t('settings.themeDark') : t('settings.themeSystem'), onClick: () => setActiveSheet('THEME') },
       ]
     },
     {
-      title: 'AI 自动入账',
+      title: t('settings.aiGroup'),
       items: [
         {
           icon: 'smart_toy',
-          label: '自动入账阈值',
-          value: autoConfirmThreshold === 'HIGH_ONLY' ? '仅高置信度' : autoConfirmThreshold === 'HIGH_AND_MEDIUM' ? '高+中置信度' : '全部手动',
+          label: t('settings.autoConfirmThreshold'),
+          value: autoConfirmThreshold === 'HIGH_ONLY' ? t('settings.highOnly') : autoConfirmThreshold === 'HIGH_AND_MEDIUM' ? t('settings.highAndMedium') : t('settings.manualOnly'),
           onClick: () => setActiveSheet('AUTO_CONFIRM')
         },
       ]
@@ -170,35 +187,35 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background-light h-full">
+    <div className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
       <div className="max-w-3xl mx-auto px-4 md:px-10 py-6 md:py-8">
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-extrabold text-text-main">{t('settings.title')}</h1>
-          <p className="text-sm text-text-sub mt-1">{t('settings.subtitle')}</p>
+          <h1 className="text-2xl font-extrabold text-text-main dark:text-text-dark-main">{t('settings.title')}</h1>
+          <p className="text-sm text-text-sub dark:text-text-dark-sub mt-1">{t('settings.subtitle')}</p>
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 mb-8 flex items-center gap-4">
+        <div className="bg-white dark:bg-surface-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-border-dark mb-8 flex items-center gap-4">
           {profileLoading ? (
             <div className="flex items-center gap-4 flex-1">
-              <div className="size-14 md:size-16 rounded-full bg-slate-200 animate-pulse shrink-0"></div>
+              <div className="size-14 md:size-16 rounded-full bg-slate-200 dark:bg-[#3a3f54] animate-pulse shrink-0"></div>
               <div className="flex-1">
-                <div className="h-5 w-24 bg-slate-200 animate-pulse rounded mb-2"></div>
-                <div className="h-4 w-32 bg-slate-200 animate-pulse rounded"></div>
+                <div className="h-5 w-24 bg-slate-200 dark:bg-[#3a3f54] animate-pulse rounded mb-2"></div>
+                <div className="h-4 w-32 bg-slate-200 dark:bg-[#3a3f54] animate-pulse rounded"></div>
               </div>
             </div>
           ) : (
             <>
               <div
-                className="size-14 md:size-16 rounded-full bg-cover bg-center border border-slate-200 shrink-0"
+                className="size-14 md:size-16 rounded-full bg-cover bg-center border border-slate-200 dark:border-border-dark shrink-0"
                 style={{ backgroundImage: `url("${currentUser?.avatar || 'https://picsum.photos/100/100'}")` }}
               ></div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-bold text-text-main truncate">{currentUser?.name}</h2>
+                <h2 className="text-lg font-bold text-text-main dark:text-text-dark-main truncate">{currentUser?.name}</h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm text-text-sub whitespace-nowrap">{currentUser?.email || 'ID: 8839201'}</span>
+                  <span className="text-sm text-text-sub dark:text-text-dark-sub whitespace-nowrap">{currentUser?.email || 'ID: 8839201'}</span>
                   {currentUser?.isPro && (
                     <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap">{t('nav.pro')}</span>
                   )}
@@ -206,7 +223,7 @@ const Settings: React.FC = () => {
               </div>
               <button
                 onClick={() => setIsEditProfileModalOpen(true)}
-                className="shrink-0 px-3 py-1.5 md:px-4 md:py-2 border border-slate-200 rounded-lg text-xs md:text-sm font-medium hover:bg-slate-50 transition-colors"
+                className="shrink-0 px-3 py-1.5 md:px-4 md:py-2 border border-slate-200 dark:border-border-dark rounded-lg text-xs md:text-sm font-medium hover:bg-slate-50 dark:hover:bg-surface-dark-alt transition-colors dark:text-text-dark-main"
               >
                 {t('settings.editProfileTitle')}
               </button>
@@ -215,56 +232,56 @@ const Settings: React.FC = () => {
         </div>
 
         {/* Webhook Configuration Card */}
-        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+        <div className="bg-white dark:bg-surface-dark p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-border-dark mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <div className="size-10 rounded-full bg-purple-50 flex items-center justify-center">
+            <div className="size-10 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
               <span className="material-symbols-outlined text-purple-500">webhook</span>
             </div>
             <div>
-              <h3 className="font-bold text-text-main">Webhook 配置</h3>
-              <p className="text-xs text-text-sub">用于短信自动记账的 API 密钥</p>
+              <h3 className="font-bold text-text-main dark:text-text-dark-main">{t('settings.webhookConfig')}</h3>
+              <p className="text-xs text-text-sub dark:text-text-dark-sub">{t('settings.webhookConfigDesc')}</p>
             </div>
           </div>
 
           {/* User ID */}
           <div className="mb-4">
-            <label className="text-xs font-medium text-text-sub mb-1 block">用户 ID</label>
+            <label className="text-xs font-medium text-text-sub dark:text-text-dark-sub mb-1 block">{t('settings.userId')}</label>
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-slate-50 px-3 py-2 rounded-lg text-xs font-mono text-slate-600 break-all">
+              <code className="flex-1 bg-slate-50 dark:bg-surface-dark-alt px-3 py-2 rounded-lg text-xs font-mono text-slate-600 dark:text-gray-300 break-all">
                 {user?.id}
               </code>
               <button
                 onClick={handleCopyUserId}
-                className="shrink-0 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
-                title="复制用户ID"
+                className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-[#2e3244] hover:bg-slate-200 dark:hover:bg-[#3a3f54] transition-colors"
+                title={t('settings.copyUserId')}
               >
-                <span className="material-symbols-outlined text-slate-500 text-[18px]">content_copy</span>
+                <span className="material-symbols-outlined text-slate-500 dark:text-gray-400 text-[18px]">content_copy</span>
               </button>
             </div>
           </div>
 
           {/* Webhook Key */}
           <div className="mb-4">
-            <label className="text-xs font-medium text-text-sub mb-1 block">Webhook Key</label>
+            <label className="text-xs font-medium text-text-sub dark:text-text-dark-sub mb-1 block">{t('settings.webhookKey')}</label>
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-slate-50 px-3 py-2 rounded-lg text-xs font-mono text-slate-600 break-all">
-                {showWebhookKey ? (webhookKey || '未设置') : '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••'}
+              <code className="flex-1 bg-slate-50 dark:bg-surface-dark-alt px-3 py-2 rounded-lg text-xs font-mono text-slate-600 dark:text-gray-300 break-all">
+                {showWebhookKey ? (webhookKey || t('settings.notSet')) : '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••'}
               </code>
               <button
                 onClick={() => setShowWebhookKey(!showWebhookKey)}
-                className="shrink-0 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
-                title={showWebhookKey ? '隐藏' : '显示'}
+                className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-[#2e3244] hover:bg-slate-200 dark:hover:bg-[#3a3f54] transition-colors"
+                title={showWebhookKey ? t('settings.hideKey') : t('settings.showKey')}
               >
-                <span className="material-symbols-outlined text-slate-500 text-[18px]">
+                <span className="material-symbols-outlined text-slate-500 dark:text-gray-400 text-[18px]">
                   {showWebhookKey ? 'visibility_off' : 'visibility'}
                 </span>
               </button>
               <button
                 onClick={handleCopyWebhookKey}
-                className="shrink-0 p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
-                title="复制 Webhook Key"
+                className="shrink-0 p-2 rounded-lg bg-slate-100 dark:bg-[#2e3244] hover:bg-slate-200 dark:hover:bg-[#3a3f54] transition-colors"
+                title={t('settings.copyWebhookKey')}
               >
-                <span className="material-symbols-outlined text-slate-500 text-[18px]">
+                <span className="material-symbols-outlined text-slate-500 dark:text-gray-400 text-[18px]">
                   {copied ? 'check' : 'content_copy'}
                 </span>
               </button>
@@ -273,7 +290,7 @@ const Settings: React.FC = () => {
 
           {/* Usage Example */}
           <div className="mb-4">
-            <label className="text-xs font-medium text-text-sub mb-1 block">调用示例</label>
+            <label className="text-xs font-medium text-text-sub dark:text-text-dark-sub mb-1 block">{t('settings.usageExample')}</label>
             <pre className="bg-slate-900 text-green-400 p-3 rounded-lg text-[10px] md:text-xs overflow-x-auto whitespace-pre-wrap break-all font-mono">
               {webhookExample}
             </pre>
@@ -283,13 +300,13 @@ const Settings: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsRegenerateModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-50 text-amber-600 text-xs font-medium hover:bg-amber-100 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 text-xs font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
             >
               <span className="material-symbols-outlined text-[16px]">refresh</span>
-              重新生成
+              {t('settings.regenerate')}
             </button>
-            <span className="text-xs text-text-sub">
-              重新生成后，旧的 Key 将立即失效
+            <span className="text-xs text-text-sub dark:text-text-dark-sub">
+              {t('settings.regenerateWarning')}
             </span>
           </div>
         </div>
@@ -298,18 +315,18 @@ const Settings: React.FC = () => {
         <div className="flex flex-col gap-6 pb-20 md:pb-0">
           {menuGroups.map((group, index) => (
             <div key={index} className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold text-text-sub uppercase tracking-wider ml-2">{group.title}</h3>
-              <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+              <h3 className="text-xs font-bold text-text-sub dark:text-text-dark-sub uppercase tracking-wider ml-2">{group.title}</h3>
+              <div className="bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-border-dark overflow-hidden">
                 {group.items.map((item, i) => (
                   <button
                     key={i}
                     onClick={item.onClick}
-                    className={`w-full flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors text-left ${i !== group.items.length - 1 ? 'border-b border-slate-50' : ''}`}
+                    className={`w-full flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-surface-dark-alt transition-colors text-left ${i !== group.items.length - 1 ? 'border-b border-slate-50 dark:border-border-dark' : ''}`}
                   >
-                    <span className="material-symbols-outlined text-slate-400">{item.icon}</span>
-                    <span className="text-sm font-medium text-text-main flex-1">{item.label}</span>
-                    <span className="text-xs md:text-sm text-text-sub">{item.value}</span>
-                    <span className="material-symbols-outlined text-slate-300 text-[18px]">chevron_right</span>
+                    <span className="material-symbols-outlined text-slate-400 dark:text-gray-500">{item.icon}</span>
+                    <span className="text-sm font-medium text-text-main dark:text-text-dark-main flex-1">{item.label}</span>
+                    <span className="text-xs md:text-sm text-text-sub dark:text-text-dark-sub">{item.value}</span>
+                    <span className="material-symbols-outlined text-slate-300 dark:text-gray-600 text-[18px]">chevron_right</span>
                   </button>
                 ))}
               </div>
@@ -319,13 +336,13 @@ const Settings: React.FC = () => {
           {/* Logout */}
           <button
             onClick={handleLogoutClick}
-            className="w-full bg-white border border-red-100 text-danger font-bold py-4 rounded-xl shadow-sm hover:bg-red-50 transition-colors mt-4 flex items-center justify-center gap-2 group"
+            className="w-full bg-white dark:bg-surface-dark border border-red-100 dark:border-red-900/30 text-danger font-bold py-4 rounded-xl shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mt-4 flex items-center justify-center gap-2 group"
           >
             <span className="material-symbols-outlined group-hover:scale-110 transition-transform">logout</span>
             {t('nav.logout')}
           </button>
 
-          <div className="text-center text-xs text-slate-400 mt-4 pb-4">
+          <div className="text-center text-xs text-slate-400 dark:text-gray-500 mt-4 pb-4">
             EasyBill AI © 2023 All Rights Reserved
           </div>
         </div>
@@ -343,7 +360,7 @@ const Settings: React.FC = () => {
         confirmButtonClass="bg-red-500 text-white hover:bg-red-600 shadow-red-200"
         icon="logout"
         iconColorClass="text-red-500"
-        iconBgClass="bg-red-50"
+        iconBgClass="bg-red-50 dark:bg-red-900/20"
       />
 
       {/* Edit Profile Modal */}
@@ -352,20 +369,6 @@ const Settings: React.FC = () => {
           user={currentUser || user!}
           onClose={() => setIsEditProfileModalOpen(false)}
           onSave={handleUpdateProfile}
-        />
-      )}
-
-      {/* Currency Selection Modal */}
-      {activeSheet === 'CURRENCY' && (
-        <SelectionModal
-          title={t('settings.currency')}
-          options={[
-            { label: 'CNY (¥)', value: 'CNY', icon: 'currency_yuan' },
-            { label: 'USD ($)', value: 'USD', icon: 'attach_money' }
-          ]}
-          currentValue={currency}
-          onSelect={(val) => { setCurrency(val); setActiveSheet(null); }}
-          onClose={() => setActiveSheet(null)}
         />
       )}
 
@@ -378,7 +381,16 @@ const Settings: React.FC = () => {
             { label: 'English', value: 'en', icon: 'translate' }
           ]}
           currentValue={language}
-          onSelect={(val) => { setLanguage(val as 'zh' | 'en'); setActiveSheet(null); }}
+          onSelect={async (val) => {
+            setLanguage(val as 'zh' | 'en');
+            setActiveSheet(null);
+            // Sync to backend
+            try {
+              await api.users.updatePreferences(token!, { language: val });
+            } catch (error) {
+              console.error('Failed to update language preference:', error);
+            }
+          }}
           onClose={() => setActiveSheet(null)}
         />
       )}
@@ -386,11 +398,11 @@ const Settings: React.FC = () => {
       {/* Auto Confirm Threshold Selection Modal */}
       {activeSheet === 'AUTO_CONFIRM' && (
         <SelectionModal
-          title="自动入账阈值"
+          title={t('settings.autoConfirmThreshold')}
           options={[
-            { label: '仅高置信度', value: 'HIGH_ONLY', icon: 'shield', description: '只有 AI 高度确信的交易才会自动入账' },
-            { label: '高+中置信度', value: 'HIGH_AND_MEDIUM', icon: 'verified', description: '高和中等置信度的交易都会自动入账' },
-            { label: '全部手动确认', value: 'MANUAL_ONLY', icon: 'pan_tool', description: '所有交易都需要手动确认后才入账' }
+            { label: t('settings.highOnly'), value: 'HIGH_ONLY', icon: 'shield', description: t('settings.highOnlyDesc') },
+            { label: t('settings.highAndMedium'), value: 'HIGH_AND_MEDIUM', icon: 'verified', description: t('settings.highAndMediumDesc') },
+            { label: t('settings.manualOnly'), value: 'MANUAL_ONLY', icon: 'pan_tool', description: t('settings.manualOnlyDesc') }
           ]}
           currentValue={autoConfirmThreshold}
           onSelect={async (val) => {
@@ -412,21 +424,57 @@ const Settings: React.FC = () => {
         isOpen={isRegenerateModalOpen}
         onClose={() => setIsRegenerateModalOpen(false)}
         onConfirm={handleRegenerateWebhookKey}
-        title="重新生成 Webhook Key"
-        message="确定要重新生成 Webhook Key 吗？生成后，旧的 Key 将立即失效，您需要更新所有使用该 Key 的配置。"
-        confirmText={isLoading ? '生成中...' : '确认生成'}
+        title={t('settings.regenerateTitle')}
+        message={t('settings.regenerateMessage')}
+        confirmText={isLoading ? t('settings.regenerating') : t('settings.regenerateConfirm')}
         confirmButtonClass="bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200"
         icon="refresh"
         iconColorClass="text-amber-500"
-        iconBgClass="bg-amber-50"
+        iconBgClass="bg-amber-50 dark:bg-amber-900/20"
       />
 
       {/* Success Toast */}
       {showToast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] bg-[#111418] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 fade-in duration-300">
           <span className="material-symbols-outlined text-success">check_circle</span>
-          <span className="font-bold text-sm">保存成功</span>
+          <span className="font-bold text-sm">{t('settings.saveSuccess')}</span>
         </div>
+      )}
+
+      {/* Change Password Modal */}
+      {isChangePasswordModalOpen && (
+        <ChangePasswordModal
+          onClose={() => setIsChangePasswordModalOpen(false)}
+          onSuccess={() => {
+            setIsChangePasswordModalOpen(false);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 2000);
+          }}
+        />
+      )}
+
+      {/* Theme Selection Modal */}
+      {activeSheet === 'THEME' && (
+        <SelectionModal
+          title={t('settings.theme')}
+          options={[
+            { label: t('settings.themeLight'), value: 'light', icon: 'light_mode' },
+            { label: t('settings.themeDark'), value: 'dark', icon: 'dark_mode' },
+            { label: t('settings.themeSystem'), value: 'system', icon: 'contrast' },
+          ]}
+          currentValue={theme}
+          onSelect={async (val) => {
+            setTheme(val as 'light' | 'dark' | 'system');
+            setActiveSheet(null);
+            // Sync to backend
+            try {
+              await api.users.updatePreferences(token!, { theme: val });
+            } catch (error) {
+              console.error('Failed to update theme preference:', error);
+            }
+          }}
+          onClose={() => setActiveSheet(null)}
+        />
       )}
     </div>
   );
@@ -446,12 +494,12 @@ const SelectionModal: React.FC<SelectionModalProps> = ({ title, options, current
   return (
     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
       <div
-        className="w-full md:max-w-sm bg-white rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom md:zoom-in-95 duration-200"
+        className="w-full md:max-w-sm bg-white dark:bg-surface-dark rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom md:zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="font-bold text-text-main">{title}</h3>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-text-main transition-colors">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-border-dark flex items-center justify-between">
+          <h3 className="font-bold text-text-main dark:text-text-dark-main">{title}</h3>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-[#2e3244] text-slate-400 dark:text-gray-500 hover:text-text-main dark:hover:text-text-dark-main transition-colors">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -462,10 +510,10 @@ const SelectionModal: React.FC<SelectionModalProps> = ({ title, options, current
               onClick={() => onSelect(option.value)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${currentValue === option.value
                 ? 'bg-primary/5 text-primary'
-                : 'text-text-main hover:bg-slate-50'
+                : 'text-text-main dark:text-text-dark-main hover:bg-slate-50 dark:hover:bg-surface-dark-alt'
                 }`}
             >
-              <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${currentValue === option.value ? 'bg-primary/10' : 'bg-slate-100 text-slate-500'
+              <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${currentValue === option.value ? 'bg-primary/10' : 'bg-slate-100 dark:bg-[#2e3244] text-slate-500 dark:text-gray-400'
                 }`}>
                 <span className="material-symbols-outlined text-[20px]">{option.icon}</span>
               </div>
@@ -474,7 +522,7 @@ const SelectionModal: React.FC<SelectionModalProps> = ({ title, options, current
                   {option.label}
                 </div>
                 {option.description && (
-                  <div className="text-xs text-text-sub mt-0.5">{option.description}</div>
+                  <div className="text-xs text-text-sub dark:text-text-dark-sub mt-0.5">{option.description}</div>
                 )}
               </div>
               {currentValue === option.value && (
@@ -483,8 +531,8 @@ const SelectionModal: React.FC<SelectionModalProps> = ({ title, options, current
             </button>
           ))}
         </div>
-        <div className="p-2 bg-slate-50/50 border-t border-slate-100 md:hidden">
-          <button onClick={onClose} className="w-full h-12 rounded-xl bg-white border border-slate-200 text-text-main font-bold text-sm">{t('common.cancel')}</button>
+        <div className="p-2 bg-slate-50/50 dark:bg-surface-dark-alt border-t border-slate-100 dark:border-border-dark md:hidden">
+          <button onClick={onClose} className="w-full h-12 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark text-text-main dark:text-text-dark-main font-bold text-sm">{t('common.cancel')}</button>
         </div>
       </div>
     </div>

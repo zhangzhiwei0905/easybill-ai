@@ -177,6 +177,13 @@ export interface CategoryAnalysis {
   changePercentage: number;
 }
 
+export interface TransactionDetail {
+  id: string;
+  amount: number;
+  description: string;
+  transactionDate: string;
+}
+
 export interface PredictionAnalysis {
   monthEndExpense: number;
   currentExpense: number;

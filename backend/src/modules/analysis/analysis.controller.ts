@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Param,
   Query,
   Req,
   UseGuards,
@@ -57,5 +58,13 @@ export class AnalysisController {
   async getRecommendations(@Req() req, @Query() queryDto: AnalysisQueryDto) {
     this.logger.log(`Getting AI recommendations for user ${req.user.id} with ${queryDto.months || 3} months`);
     return this.analysisService.getAiRecommendations(req.user.id, queryDto.months || 3);
+  }
+
+  @Get('categories/:categoryId/transactions')
+  @ApiOperation({ summary: '获取某分类下的交易明细' })
+  @ApiQuery({ name: 'months', required: false, type: Number, description: '分析月数，默认3个月' })
+  async getCategoryTransactions(@Req() req, @Param('categoryId') categoryId: string, @Query() queryDto: AnalysisQueryDto) {
+    this.logger.log(`Getting transactions for category ${categoryId}, user ${req.user.id}`);
+    return this.analysisService.getCategoryTransactions(req.user.id, categoryId, queryDto.months || 3);
   }
 }

@@ -128,7 +128,7 @@ export class AnalysisService {
     const currentCategoryExpenses = await this.transactionsService.getCategoryExpenses(userId, months);
     
     // 获取上一个周期的分类支出（用于比较）
-    const previousCategoryExpenses = await this.transactionsService.getCategoryExpenses(userId, months);
+    const previousCategoryExpenses = await this.transactionsService.getCategoryExpenses(userId, months, true);
     
     const totalExpense = currentCategoryExpenses.reduce((sum, cat) => sum + cat.amount, 0);
 
@@ -341,7 +341,7 @@ export class AnalysisService {
           Authorization: `Bearer ${this.deepseekApiKey}`,
         },
         body: JSON.stringify({
-          model: 'deepseek-chat',
+          model: 'deepseek-v4-flash',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -421,5 +421,10 @@ export class AnalysisService {
       overallScore: 7,
       months,
     };
+  }
+
+  async getCategoryTransactions(userId: string, categoryId: string, months: number) {
+    this.logger.log(`Getting category transactions for user ${userId}, category ${categoryId}`);
+    return this.transactionsService.getCategoryTransactions(userId, categoryId, months);
   }
 }

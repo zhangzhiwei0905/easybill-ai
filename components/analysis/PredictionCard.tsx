@@ -1,5 +1,5 @@
 import React from 'react';
-import { PredictionAnalysis } from '../../../types';
+import { PredictionAnalysis } from '../../types';
 
 interface PredictionCardProps {
   predictions: PredictionAnalysis;

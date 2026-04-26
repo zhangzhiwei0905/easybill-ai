@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Navigate, NavLink, useLocation, Outlet, useOutletContext } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { LanguageProvider, useLanguage } from './LanguageContext';
+import { ThemeProvider } from './ThemeContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Transactions from './components/Transactions';
@@ -26,7 +27,7 @@ const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
   '人情往来': { icon: 'card_giftcard', color: 'bg-rose-100 text-rose-600' },
   '工资收入': { icon: 'account_balance_wallet', color: 'bg-emerald-100 text-emerald-600' },
   '投资收益': { icon: 'trending_up', color: 'bg-teal-100 text-teal-600' },
-  '奖金收入': { icon: 'emoji_events', color: 'bg-amber-100 text-amber-600' },
+  '红包礼金': { icon: 'card_giftcard', color: 'bg-red-100 text-red-600' },
   '兼职收入': { icon: 'work', color: 'bg-cyan-100 text-cyan-600' },
   '转账': { icon: 'swap_horiz', color: 'bg-slate-100 text-slate-600' },
 };
@@ -65,7 +66,7 @@ const ProtectedRoute: React.FC = () => {
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center bg-background-light">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center bg-background-light dark:bg-background-dark">Loading...</div>;
   }
 
   if (!isAuthenticated) {
@@ -133,7 +134,7 @@ const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background-light flex-col md:flex-row">
+    <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark flex-col md:flex-row">
       {/* Sidebar - Hidden on Mobile */}
       <Sidebar
         onOpenEntryModal={() => setIsEntryModalOpen(true)}
@@ -186,9 +187,11 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <HashRouter>
-          <AppRoutes />
-        </HashRouter>
+        <ThemeProvider>
+          <HashRouter>
+            <AppRoutes />
+          </HashRouter>
+        </ThemeProvider>
       </LanguageProvider>
     </AuthProvider>
   );
@@ -213,7 +216,7 @@ const MobileNav: React.FC<{ aiPendingCount: number }> = ({ aiPendingCount }) => 
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 h-[60px] flex items-center justify-around px-2 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-surface-dark border-t border-slate-200 dark:border-border-dark h-[60px] flex items-center justify-around px-2 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
       {navItems.map((item) => {
         const isActive = location.pathname === item.path;
         return (
@@ -221,7 +224,7 @@ const MobileNav: React.FC<{ aiPendingCount: number }> = ({ aiPendingCount }) => 
             key={item.path}
             to={item.path}
             className={`flex flex-col items-center justify-center w-full h-full relative ${
-              isActive ? 'text-primary' : 'text-slate-400'
+              isActive ? 'text-primary' : 'text-slate-400 dark:text-text-dark-sub'
             }`}
           >
             <div className="relative">
@@ -229,7 +232,7 @@ const MobileNav: React.FC<{ aiPendingCount: number }> = ({ aiPendingCount }) => 
                 {item.icon}
               </span>
               {item.badge && (
-                <span className="absolute -top-1 -right-2 bg-danger text-white text-[9px] font-bold px-1 rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 border-white">
+                <span className="absolute -top-1 -right-2 bg-danger text-white text-[9px] font-bold px-1 rounded-full min-w-[16px] h-[16px] flex items-center justify-center border-2 border-white dark:border-surface-dark">
                   {item.badge}
                 </span>
               )}
