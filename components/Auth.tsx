@@ -324,26 +324,6 @@ const Auth: React.FC = () => {
             </button>
           </form>
 
-          {/* Social Auth - Only Login and Register */}
-          {view !== 'FORGOT' && (
-            <div className="mt-8">
-              <div className="relative flex justify-center text-xs text-slate-400 dark:text-gray-500 mb-5">
-                <span className="bg-white dark:bg-surface-dark md:bg-white px-2 z-10 relative">{t('common.or')}</span>
-                <div className="absolute inset-x-0 top-1/2 h-px bg-slate-100 dark:bg-border-dark -z-0"></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <button className="h-10 border border-slate-200 dark:border-border-dark rounded-lg flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-surface-dark-alt transition-colors">
-                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-                  <span className="text-sm font-bold text-text-main dark:text-text-dark-main">{t('common.google')}</span>
-                </button>
-                <button className="h-10 border border-slate-200 dark:border-border-dark rounded-lg flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-surface-dark-alt transition-colors">
-                  <span className="material-symbols-outlined text-green-600 text-[22px]">chat</span>
-                  <span className="text-sm font-bold text-text-main dark:text-text-dark-main">{t('common.wechat')}</span>
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Toggle Login/Register or Back to Login */}
           <div className="mt-8 text-center">
             <p className="text-sm text-text-sub dark:text-text-dark-sub font-medium">
